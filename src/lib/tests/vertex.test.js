@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import Vertex from './vertex';
+import Vertex from './../vertex';
 
 describe('vertex', function() {
   describe('#visited', function() {
