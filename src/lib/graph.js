@@ -36,13 +36,30 @@ class Graph {
   }
 
   addVertex(vertex) {
-    if (-1 === _.indexOf(this.vertices, vertex)) {
+    if (!vertex) {
+      return;
+    }
+
+    if (_.isEmpty(this.vertices)) {
+      this.vertices.push(vertex);
+      return;
+    }
+
+    let clone_index = _.findIndex(this.vertices, function (v) {
+      return v.id === vertex.id;
+    });
+
+    if (-1 === clone_index) {
       this.vertices.push(vertex);
     }
   }
 
   addEdge(edge) {
-    if (-1 === _.indexOf(this.edges, edge)) {
+    let clone_index = _.findIndex(this.edges, function (e) {
+      return (e.id === edge.id) || (e.source.id === edge.source.id && e.target.id === edge.target.id);
+    });
+
+    if (-1 === clone_index) {
       this.edges.push(edge);
       this.addVertex(edge.source);
       this.addVertex(edge.target);
@@ -145,6 +162,7 @@ class Graph {
 
   edmondsKarp() {
     let g = this;
+    g.max_flow = 0;
     g.edges.map(function (e) {
       e.resetFlow();
     });
@@ -152,7 +170,7 @@ class Graph {
     while (g.bfs() > 0) {
       g.flow_path = [];
     }
-    g.flow_path = 0;
+    g.flow_path = [];
   }
 }
 

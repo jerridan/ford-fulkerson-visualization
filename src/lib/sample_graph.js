@@ -33,4 +33,4 @@ sample_graph.addEdge(e45);
 sample_graph.setSource(v0);
 sample_graph.setSink(v5);
 
-export default sample_graph.toJSON();
+export default sample_graph;

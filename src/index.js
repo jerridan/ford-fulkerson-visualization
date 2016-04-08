@@ -17,11 +17,13 @@ var svg = d3.select('body')
   .attr('width', width)
   .attr('height', height);
 
-let nodes = sample_graph.vertices;
-let links = sample_graph.edges;
+let graph = sample_graph;
+
+let nodes = graph.vertices;
+let links = graph.edges;
 
 // Source and target of each link must reference node array
-links.map(function(link) {
+links.map(function (link) {
   link.source = nodes[link.source.id];
   link.target = nodes[link.target.id];
 });
@@ -58,6 +60,11 @@ svg.append('svg:defs').append('svg:marker')
   .attr('d', 'M10,-5L0,0L10,5')
   .attr('fill', '#000');
 
+let drag_line = svg.append('svg:path')
+  .attr('class', 'link dragline')
+  .style('display', 'none')
+  .attr('d', 'M0,0L0,0');
+
 // handles to link and node element groups
 let path = svg.append('svg:g').selectAll('path'),
   circle = svg.append('svg:g').selectAll('g');
@@ -83,6 +90,15 @@ function tick() {
   circle.attr('transform', function (d) {
     return 'translate(' + d.x + ',' + d.y + ')';
   });
+}
+
+// mouse event variables
+let mousedown_node = null;
+let mouseup_node = null;
+
+function resetMouseVars() {
+  mousedown_node = null;
+  mouseup_node = null;
 }
 
 // update graph (called when needed)
@@ -145,6 +161,41 @@ function restart() {
     })
     .style('stroke', function (d) {
       return d3.rgb(colors(d.id)).darker().toString();
+    })
+    .on('mousedown', function (d) {
+      mousedown_node = d;
+
+      // reposition drag line
+      drag_line
+        .style('marker-end', 'url(#end-arrow)')
+        .style('display', 'inline')
+        .attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'L' + mousedown_node.x + ',' + mousedown_node.y);
+
+      restart();
+    })
+    .on('mouseup', function (d) {
+      if (!mousedown_node) {
+        return;
+      }
+
+      mouseup_node = d;
+
+      drag_line
+        .style('display', 'none')
+        .style('marker-end', '');
+
+      // cannot drag to self
+      if (mousedown_node === mouseup_node) {
+        resetMouseVars();
+        return;
+      }
+
+      // Edge always drawn pointing from source to target
+      let edge = new Edge(mousedown_node, mouseup_node);
+      graph.addEdge(edge);
+
+      resetMouseVars();
+      restart();
     });
 
   // show node IDs
@@ -162,5 +213,47 @@ function restart() {
   // set the graph in motion
   force.start();
 }
+
+function addNewNode() {
+  if (mousedown_node) {
+    return;
+  }
+
+  svg.classed('active', true);
+
+  let position = d3.mouse(this);
+  let id = nodes.length;
+  let vertex = new Vertex(id);
+  graph.addVertex(vertex);
+
+  nodes[id].x = position[0];
+  nodes[id].y = position[1];
+
+  restart();
+}
+
+function updateDragLine() {
+  if (!mousedown_node) {
+    return;
+  }
+
+  drag_line.attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'L' + d3.mouse(this)[0] + ',' + d3.mouse(this)[1]);
+
+  restart();
+}
+
+function hideDragLine() {
+  if (mousedown_node) {
+    drag_line
+      .style('display', 'none')
+      .style('marker-end', '');
+  }
+  svg.classed('active', false);
+  resetMouseVars();
+}
+
+svg.on('mousedown', addNewNode);
+svg.on('mousemove', updateDragLine);
+svg.on('mouseup', hideDragLine);
 
 restart();

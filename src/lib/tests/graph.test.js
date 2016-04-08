@@ -18,6 +18,15 @@ describe('Graph', function () {
       g.addVertex(v);
       expect(g.vertices).to.eql([v]);
     });
+    it('does not add a vertex to a graph if one with the same id already exists', function () {
+      let g = new Graph();
+      let v1 = new Vertex(0);
+      let v2 = new Vertex(0);
+      v2.visited = true;
+      g.addVertex(v1);
+      g.addVertex(v2);
+      expect(g.vertices).to.eql([v1]);
+    });
   });
   describe('#addEdge', function () {
     it('adds an edge to the graph edges', function () {
@@ -40,6 +49,16 @@ describe('Graph', function () {
       let e = new Edge(v1, v2);
       g.addEdge(e);
       expect(g.vertices).to.eql([v1, v2]);
+    });
+    it('does not add an edge if one already exists with the same source and target', function () {
+      let g = new Graph();
+      let v1 = new Vertex(0);
+      let v2 = new Vertex(1);
+      let e1 = new Edge(v1, v2);
+      let e2 = new Edge(v1, v2);
+      g.addEdge(e1);
+      g.addEdge(e2);
+      expect(g.edges).to.eql([e1]);
     });
   });
   describe('#get size', function () {

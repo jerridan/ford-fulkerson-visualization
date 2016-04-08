@@ -25722,8 +25722,10 @@ var width = 960,
 
 var svg = _d2.default.select('body').append('svg').attr('oncontextmenu', 'return false;').attr('width', width).attr('height', height);
 
-var nodes = _sample_graph2.default.vertices;
-var links = _sample_graph2.default.edges;
+var graph = _sample_graph2.default;
+
+var nodes = graph.vertices;
+var links = graph.edges;
 
 // Source and target of each link must reference node array
 links.map(function (link) {
@@ -25738,6 +25740,8 @@ var force = _d2.default.layout.force().nodes(nodes).links(links).size([width, he
 svg.append('svg:defs').append('svg:marker').attr('id', 'end-arrow').attr('viewBox', '0 -5 10 10').attr('refX', 6).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#000');
 
 svg.append('svg:defs').append('svg:marker').attr('id', 'start-arrow').attr('viewBox', '0 -5 10 10').attr('refX', 4).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M10,-5L0,0L10,5').attr('fill', '#000');
+
+var drag_line = svg.append('svg:path').attr('class', 'link dragline').style('display', 'none').attr('d', 'M0,0L0,0');
 
 // handles to link and node element groups
 var path = svg.append('svg:g').selectAll('path'),
@@ -25764,6 +25768,15 @@ function tick() {
   circle.attr('transform', function (d) {
     return 'translate(' + d.x + ',' + d.y + ')';
   });
+}
+
+// mouse event variables
+var mousedown_node = null;
+var mouseup_node = null;
+
+function resetMouseVars() {
+  mousedown_node = null;
+  mouseup_node = null;
 }
 
 // update graph (called when needed)
@@ -25808,6 +25821,34 @@ function restart() {
     return colors(d.id);
   }).style('stroke', function (d) {
     return _d2.default.rgb(colors(d.id)).darker().toString();
+  }).on('mousedown', function (d) {
+    mousedown_node = d;
+
+    // reposition drag line
+    drag_line.style('marker-end', 'url(#end-arrow)').style('display', 'inline').attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'L' + mousedown_node.x + ',' + mousedown_node.y);
+
+    restart();
+  }).on('mouseup', function (d) {
+    if (!mousedown_node) {
+      return;
+    }
+
+    mouseup_node = d;
+
+    drag_line.style('display', 'none').style('marker-end', '');
+
+    // cannot drag to self
+    if (mousedown_node === mouseup_node) {
+      resetMouseVars();
+      return;
+    }
+
+    // Edge always drawn pointing from source to target
+    var edge = new _edge2.default(mousedown_node, mouseup_node);
+    graph.addEdge(edge);
+
+    resetMouseVars();
+    restart();
   });
 
   // show node IDs
@@ -25821,6 +25862,46 @@ function restart() {
   // set the graph in motion
   force.start();
 }
+
+function addNewNode() {
+  if (mousedown_node) {
+    return;
+  }
+
+  svg.classed('active', true);
+
+  var position = _d2.default.mouse(this);
+  var id = nodes.length;
+  var vertex = new _vertex2.default(id);
+  graph.addVertex(vertex);
+
+  nodes[id].x = position[0];
+  nodes[id].y = position[1];
+
+  restart();
+}
+
+function updateDragLine() {
+  if (!mousedown_node) {
+    return;
+  }
+
+  drag_line.attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'L' + _d2.default.mouse(this)[0] + ',' + _d2.default.mouse(this)[1]);
+
+  restart();
+}
+
+function hideDragLine() {
+  if (mousedown_node) {
+    drag_line.style('display', 'none').style('marker-end', '');
+  }
+  svg.classed('active', false);
+  resetMouseVars();
+}
+
+svg.on('mousedown', addNewNode);
+svg.on('mousemove', updateDragLine);
+svg.on('mouseup', hideDragLine);
 
 restart();
 
@@ -25963,7 +26044,11 @@ var Graph = function () {
   }, {
     key: 'addEdge',
     value: function addEdge(edge) {
-      if (-1 === _lodash2.default.indexOf(this.edges, edge)) {
+      var cloneIndex = _lodash2.default.findIndex(this.edges, function (e) {
+        return e.id === edge.id || e.source.id === edge.source.id && e.target.id === edge.target.id;
+      });
+
+      if (-1 === cloneIndex) {
         this.edges.push(edge);
         this.addVertex(edge.source);
         this.addVertex(edge.target);
@@ -26082,6 +26167,7 @@ var Graph = function () {
     key: 'edmondsKarp',
     value: function edmondsKarp() {
       var g = this;
+      g.max_flow = 0;
       g.edges.map(function (e) {
         e.resetFlow();
       });
@@ -26089,7 +26175,7 @@ var Graph = function () {
       while (g.bfs() > 0) {
         g.flow_path = [];
       }
-      g.flow_path = 0;
+      g.flow_path = [];
     }
   }, {
     key: 'size',
@@ -26155,7 +26241,7 @@ sample_graph.addEdge(e45);
 sample_graph.setSource(v0);
 sample_graph.setSink(v5);
 
-exports.default = sample_graph.toJSON();
+exports.default = sample_graph;
 
 },{"../lib/edge":6,"../lib/graph":7,"../lib/vertex":9}],9:[function(require,module,exports){
 "use strict";
