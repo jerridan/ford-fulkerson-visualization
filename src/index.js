@@ -1,4 +1,5 @@
 import d3 from 'd3';
+import d3ContextMenu from './lib/d3_context_menu';
 
 import Vertex from './lib/vertex';
 import Edge from './lib/edge';
@@ -96,6 +97,8 @@ function tick() {
 let mousedown_node = null;
 let mouseup_node = null;
 
+let context_menu_open = false;
+
 function resetMouseVars() {
   mousedown_node = null;
   mouseup_node = null;
@@ -148,6 +151,18 @@ function restart() {
   circle.selectAll('circle')
     .style('fill', function (d) {
       return colors(d.id);
+    })
+    .style('stroke', function (d) { // sink and source are black
+      if (d === graph.source || d === graph.sink) {
+        return d3.rgb('black');
+      } else {
+        return d3.rgb(colors(d.id)).darker().toString();
+      }
+    })
+    .style('stroke-dasharray', function (d) { // sink has dashed border
+      if (d === graph.sink) {
+        return '5, 3';
+      }
     });
 
   // add new nodes
@@ -159,8 +174,17 @@ function restart() {
     .style('fill', function (d) {
       return colors(d.id);
     })
-    .style('stroke', function (d) {
-      return d3.rgb(colors(d.id)).darker().toString();
+    .style('stroke', function (d) { // sink and source are black
+      if (d === graph.source || d === graph.sink) {
+        return d3.rgb('black');
+      } else {
+        return d3.rgb(colors(d.id)).darker().toString();
+      }
+    })
+    .style('stroke-dasharray', function (d) { // sink has dashed border
+      if (d === graph.sink) {
+        return '5, 3';
+      }
     })
     .on('mousedown', function (d) {
       mousedown_node = d;
@@ -196,7 +220,30 @@ function restart() {
 
       resetMouseVars();
       restart();
-    });
+    })
+    .on('contextmenu', d3ContextMenu(function () {
+      let selected_node = mousedown_node; // Grab node before hideDragLine resets it
+      context_menu_open = true;
+      hideDragLine();
+      return [
+        {
+          title: 'Set as source',
+          action: function () {
+            graph.setSource(selected_node);
+            context_menu_open = false;
+            restart();
+          }
+        },
+        {
+          title: 'Set as sink',
+          action: function () {
+            graph.setSink(selected_node);
+            context_menu_open = false;
+            restart();
+          }
+        }
+      ]
+    }));
 
   // show node IDs
   g.append('svg:text')
@@ -215,7 +262,8 @@ function restart() {
 }
 
 function addNewNode() {
-  if (mousedown_node) {
+  if (mousedown_node || context_menu_open) {
+    context_menu_open = false;
     return;
   }
 

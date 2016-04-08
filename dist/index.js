@@ -25697,6 +25697,10 @@ var _d = require('d3');
 
 var _d2 = _interopRequireDefault(_d);
 
+var _d3_context_menu = require('./lib/d3_context_menu');
+
+var _d3_context_menu2 = _interopRequireDefault(_d3_context_menu);
+
 var _vertex = require('./lib/vertex');
 
 var _vertex2 = _interopRequireDefault(_vertex);
@@ -25774,6 +25778,8 @@ function tick() {
 var mousedown_node = null;
 var mouseup_node = null;
 
+var context_menu_open = false;
+
 function resetMouseVars() {
   mousedown_node = null;
   mouseup_node = null;
@@ -25812,6 +25818,18 @@ function restart() {
   // update existing nodes (visual states)
   circle.selectAll('circle').style('fill', function (d) {
     return colors(d.id);
+  }).style('stroke', function (d) {
+    // sink and source are black
+    if (d === graph.source || d === graph.sink) {
+      return _d2.default.rgb('black');
+    } else {
+      return _d2.default.rgb(colors(d.id)).darker().toString();
+    }
+  }).style('stroke-dasharray', function (d) {
+    // sink has dashed border
+    if (d === graph.sink) {
+      return '5, 3';
+    }
   });
 
   // add new nodes
@@ -25820,7 +25838,17 @@ function restart() {
   g.append('svg:circle').attr('class', 'node').attr('r', 12).style('fill', function (d) {
     return colors(d.id);
   }).style('stroke', function (d) {
-    return _d2.default.rgb(colors(d.id)).darker().toString();
+    // sink and source are black
+    if (d === graph.source || d === graph.sink) {
+      return _d2.default.rgb('black');
+    } else {
+      return _d2.default.rgb(colors(d.id)).darker().toString();
+    }
+  }).style('stroke-dasharray', function (d) {
+    // sink has dashed border
+    if (d === graph.sink) {
+      return '5, 3';
+    }
   }).on('mousedown', function (d) {
     mousedown_node = d;
 
@@ -25849,7 +25877,26 @@ function restart() {
 
     resetMouseVars();
     restart();
-  });
+  }).on('contextmenu', (0, _d3_context_menu2.default)(function () {
+    var selected_node = mousedown_node; // Grab node before hideDragLine resets it
+    context_menu_open = true;
+    hideDragLine();
+    return [{
+      title: 'Set as source',
+      action: function action() {
+        graph.setSource(selected_node);
+        context_menu_open = false;
+        restart();
+      }
+    }, {
+      title: 'Set as sink',
+      action: function action() {
+        graph.setSink(selected_node);
+        context_menu_open = false;
+        restart();
+      }
+    }];
+  }));
 
   // show node IDs
   g.append('svg:text').attr('x', 0).attr('y', 4).attr('class', 'id').text(function (d) {
@@ -25864,7 +25911,8 @@ function restart() {
 }
 
 function addNewNode() {
-  if (mousedown_node) {
+  if (mousedown_node || context_menu_open) {
+    context_menu_open = false;
     return;
   }
 
@@ -25905,7 +25953,56 @@ svg.on('mouseup', hideDragLine);
 
 restart();
 
-},{"./lib/edge":6,"./lib/graph":7,"./lib/sample_graph":8,"./lib/vertex":9,"d3":1}],6:[function(require,module,exports){
+},{"./lib/d3_context_menu":6,"./lib/edge":7,"./lib/graph":8,"./lib/sample_graph":9,"./lib/vertex":10,"d3":1}],6:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _d = require('d3');
+
+var _d2 = _interopRequireDefault(_d);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var d3ContextMenu = function d3ContextMenu(menu, openCallback) {
+
+  // create the div element that will hold the context menu
+  _d2.default.selectAll('.d3-context-menu').data([1]).enter().append('div').attr('class', 'd3-context-menu');
+
+  // close menu
+  _d2.default.select('body').on('click.d3-context-menu', function () {
+    _d2.default.select('.d3-context-menu').style('display', 'none');
+  });
+
+  // this gets executed when a contextmenu event occurs
+  return function (data, index) {
+    var elm = this;
+
+    _d2.default.selectAll('.d3-context-menu').html('');
+    var list = _d2.default.selectAll('.d3-context-menu').append('ul');
+    list.selectAll('li').data(menu).enter().append('li').html(function (d) {
+      return d.title;
+    }).on('click', function (d, i) {
+      d.action(elm, data, index);
+      _d2.default.select('.d3-context-menu').style('display', 'none');
+    });
+
+    // the openCallback allows an action to fire before the menu is displayed
+    // an example usage would be closing a tooltip
+    if (openCallback) openCallback(data, index);
+
+    // display context menu
+    _d2.default.select('.d3-context-menu').style('left', _d2.default.event.pageX - 2 + 'px').style('top', _d2.default.event.pageY - 2 + 'px').style('display', 'block');
+
+    _d2.default.event.preventDefault();
+  };
+}; // From https://github.com/patorjk/d3-context-menu
+
+exports.default = d3ContextMenu;
+
+},{"d3":1}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25978,7 +26075,7 @@ var Edge = function () {
 
 exports.default = Edge;
 
-},{"uuid":4}],7:[function(require,module,exports){
+},{"uuid":4}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -26037,18 +26134,31 @@ var Graph = function () {
   }, {
     key: 'addVertex',
     value: function addVertex(vertex) {
-      if (-1 === _lodash2.default.indexOf(this.vertices, vertex)) {
+      if (!vertex) {
+        return;
+      }
+
+      if (_lodash2.default.isEmpty(this.vertices)) {
+        this.vertices.push(vertex);
+        return;
+      }
+
+      var clone_index = _lodash2.default.findIndex(this.vertices, function (v) {
+        return v.id === vertex.id;
+      });
+
+      if (-1 === clone_index) {
         this.vertices.push(vertex);
       }
     }
   }, {
     key: 'addEdge',
     value: function addEdge(edge) {
-      var cloneIndex = _lodash2.default.findIndex(this.edges, function (e) {
+      var clone_index = _lodash2.default.findIndex(this.edges, function (e) {
         return e.id === edge.id || e.source.id === edge.source.id && e.target.id === edge.target.id;
       });
 
-      if (-1 === cloneIndex) {
+      if (-1 === clone_index) {
         this.edges.push(edge);
         this.addVertex(edge.source);
         this.addVertex(edge.target);
@@ -26189,7 +26299,7 @@ var Graph = function () {
 
 exports.default = Graph;
 
-},{"./edge":6,"./vertex":9,"lodash":2}],8:[function(require,module,exports){
+},{"./edge":7,"./vertex":10,"lodash":2}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -26243,7 +26353,7 @@ sample_graph.setSink(v5);
 
 exports.default = sample_graph;
 
-},{"../lib/edge":6,"../lib/graph":7,"../lib/vertex":9}],9:[function(require,module,exports){
+},{"../lib/edge":7,"../lib/graph":8,"../lib/vertex":10}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
