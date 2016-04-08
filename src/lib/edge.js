@@ -1,3 +1,5 @@
+import uuid from 'uuid';
+
 class Edge {
   constructor(source, target, capacity) {
     if (0 === arguments.length) {
@@ -12,8 +14,19 @@ class Edge {
     } else {
       this.capacity = 0;
     }
+    this.id = uuid.v4();
     this.flow = 0;
     this.inFlowPath = false;
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      capacity: this.capacity,
+      flow: this.flow,
+      source: null === this.source ? null : this.source.toJSON(),
+      target: null === this.target ? null : this.target.toJSON()
+    }
   }
 
   addFlow(flow) {

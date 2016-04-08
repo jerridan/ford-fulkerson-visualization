@@ -183,7 +183,7 @@ describe('Graph', function () {
       g.setSink(v5);
 
       let flow_increase = g.bfs();
-      g.flow_path.map(function(p) {
+      g.flow_path.map(function (p) {
         expect(p.flow).to.eql(flow_increase);
       });
       expect(flow_increase).to.eql(5);
@@ -225,8 +225,8 @@ describe('Graph', function () {
       expect(flow_increase).to.eql(0);
     });
   });
-  describe('#edmondsKarp', function() {
-    it('returns a maximum flow of 0 if there are no augmenting paths', function() {
+  describe('#edmondsKarp', function () {
+    it('returns a maximum flow of 0 if there are no augmenting paths', function () {
       let g = new Graph();
       let v0 = new Vertex(0);
       let v1 = new Vertex(1);
@@ -318,6 +318,33 @@ describe('Graph', function () {
 
       g.edmondsKarp();
       expect(g.max_flow).to.eql(10);
+    });
+  });
+  describe('#toJSON', function () {
+    it('returns a JSON representation of the graph, containing vertices and edges', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let v2 = new Vertex(2);
+
+      let e01 = new Edge(v0, v1, 8);
+      let e02 = new Edge(v0, v2, 5);
+
+      g.addEdge(e01);
+      g.addEdge(e02);
+
+      let graph_json = g.toJSON();
+      expect(graph_json).to.eql({
+        vertices: [
+          {id: 0},
+          {id: 1},
+          {id: 2}
+        ],
+        edges: [
+          {id: e01.id, capacity: 8, flow: 0, source: {id: 0}, target: {id: 1}},
+          {id: e02.id, capacity: 5, flow: 0, source: {id: 0}, target: {id: 2}}
+        ]
+      })
     });
   });
 });

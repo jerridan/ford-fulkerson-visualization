@@ -4,6 +4,10 @@ class Vertex {
     this.visited = false;
     this.pre = null;
   }
+
+  toJSON() {
+    return {id: this.id};
+  }
 }
 
 export default Vertex

@@ -17,6 +17,24 @@ class Graph {
     return this.vertices.length;
   }
 
+  toJSON() {
+    let vertices = [];
+    let edges = [];
+
+    this.vertices.map(function (v) {
+      vertices.push(v.toJSON());
+    });
+
+    this.edges.map(function (e) {
+      edges.push(e.toJSON());
+    });
+
+    return {
+      vertices: vertices,
+      edges: edges
+    }
+  }
+
   addVertex(vertex) {
     if (-1 === _.indexOf(this.vertices, vertex)) {
       this.vertices.push(vertex);
@@ -91,7 +109,7 @@ class Graph {
       });
     }
 
-    if(!g.sink.visited) {
+    if (!g.sink.visited) {
       return 0;
     }
 
@@ -127,11 +145,11 @@ class Graph {
 
   edmondsKarp() {
     let g = this;
-    g.edges.map(function(e) {
+    g.edges.map(function (e) {
       e.resetFlow();
     });
 
-    while(g.bfs() > 0) {
+    while (g.bfs() > 0) {
       g.flow_path = [];
     }
     g.flow_path = 0;

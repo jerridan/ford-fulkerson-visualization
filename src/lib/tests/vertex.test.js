@@ -13,4 +13,11 @@ describe('vertex', function() {
       expect(vertex.visited).to.be.true;
     });
   });
+  describe('#toJSON', function() {
+    it('returns a vertex as a JSON object', function() {
+      let vertex = new Vertex(0);
+      let vertex_json = vertex.toJSON();
+      expect(vertex_json).to.eql({id: 0});
+    });
+  });
 });
