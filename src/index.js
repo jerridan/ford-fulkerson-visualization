@@ -42,6 +42,34 @@ let force = d3.layout.force()
   .charge(-500)
   .on('tick', tick);
 
+let drag = d3.behavior.drag()
+  .origin(function (d) {
+    return d;
+  })
+  .on('dragstart', function (d) {
+    if (shift_mode) {
+      force.stop();
+      d.fixed = false;
+    }
+  })
+  .on('drag', function (d) {
+    if (shift_mode) {
+      //console.log('dragging');
+      let position = d3.mouse(this);
+      d.x += position[0];
+      d.y += position[1];
+      d.px += position[0];
+      d.py += position[1];
+      tick();
+    }
+  })
+  .on('dragend', function (d) {
+    if (shift_mode) {
+      d.fixed = true;
+      force.resume();
+    }
+  });
+
 // define arrow markers for graph links
 svg.append('svg:defs').append('svg:marker')
   .attr('id', 'end-arrow')
@@ -110,9 +138,10 @@ let mousedown_node = null;
 let mouseup_node = null;
 let mousedown_link = null;
 
-let context_menu_open = false;
-let selected_link = null;
-let entered_capacity_val = "";
+let context_menu_open = false; // when right-click menu for vertex is open
+let selected_link = null;      // when an edge is selected
+let entered_capacity_val = ""; // the new capacity entered for an edge
+let shift_mode = false;        // when 'shift' is held down
 
 function resetMouseVars() {
   mousedown_node = null;
@@ -277,16 +306,17 @@ function restart() {
     .on('mousedown', function (d) {
       mousedown_node = d;
 
-      // reposition drag line
-      drag_line
-        .style('marker-end', 'url(#end-arrow)')
-        .style('display', 'inline')
-        .attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'L' + mousedown_node.x + ',' + mousedown_node.y);
-
-      restart();
+      if (!shift_mode) {
+        // reposition drag line
+        drag_line
+          .style('marker-end', 'url(#end-arrow)')
+          .style('display', 'inline')
+          .attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'L' + mousedown_node.x + ',' + mousedown_node.y);
+        restart();
+      }
     })
     .on('mouseup', function (d) {
-      if (!mousedown_node) {
+      if (!mousedown_node || shift_mode) {
         return;
       }
       mouseup_node = d;
@@ -338,7 +368,8 @@ function restart() {
           }
         }
       ]
-    }));
+    }))
+    .call(drag);
 
   // show node IDs
   g.append('svg:text')
@@ -376,7 +407,7 @@ function addNewNode() {
 }
 
 function updateDragLine() {
-  if (!mousedown_node) {
+  if (!mousedown_node || shift_mode) {
     return;
   }
 
@@ -396,20 +427,26 @@ function hideDragLine() {
 }
 
 function keydown() {
-  if (!selected_link) {
-    return;
-  }
-
   d3.event.preventDefault();
 
   let key_code = d3.event.keyCode;
 
-  if (13 === key_code || 27 === key_code) { // enter or escape
+  if (selected_link && (13 === key_code || 27 === key_code)) { // enter or escape
     entered_capacity_val = "";
     selected_link = null;
     restart();
-  } else if (key_code > 47 && key_code < 58) { // numeric value
+  } else if (selected_link && (key_code > 47 && key_code < 58)) { // numeric value
     updateCapacityVal(key_code - 48);
+  } else if (16 === key_code) {
+    shift_mode = true;
+  }
+}
+
+function keyup() {
+  let key_code = d3.event.keyCode;
+
+  if (16 === key_code) { // shift
+    shift_mode = false;
   }
 }
 
@@ -440,7 +477,8 @@ svg.on('mouseup', hideDragLine);
 
 // keyboard event handlers
 d3.select(window)
-  .on('keydown', keydown);
+  .on('keydown', keydown)
+  .on('keyup', keyup);
 
 // Button causes maximum flow to be calculated
 d3.select('#calcMaxFlow').on('click', calcMaxFlow);

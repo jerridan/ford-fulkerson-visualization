@@ -25744,6 +25744,30 @@ links.map(function (link) {
 // init D3 force layout
 var force = _d2.default.layout.force().nodes(nodes).links(links).size([width, height]).linkDistance(250).charge(-500).on('tick', tick);
 
+var drag = _d2.default.behavior.drag().origin(function (d) {
+  return d;
+}).on('dragstart', function (d) {
+  if (shift_mode) {
+    force.stop();
+    d.fixed = false;
+  }
+}).on('drag', function (d) {
+  if (shift_mode) {
+    //console.log('dragging');
+    var position = _d2.default.mouse(this);
+    d.x += position[0];
+    d.y += position[1];
+    d.px += position[0];
+    d.py += position[1];
+    tick();
+  }
+}).on('dragend', function (d) {
+  if (shift_mode) {
+    d.fixed = true;
+    force.resume();
+  }
+});
+
 // define arrow markers for graph links
 svg.append('svg:defs').append('svg:marker').attr('id', 'end-arrow').attr('viewBox', '0 -5 10 10').attr('refX', 11).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#000');
 
@@ -25790,9 +25814,10 @@ var mousedown_node = null;
 var mouseup_node = null;
 var mousedown_link = null;
 
-var context_menu_open = false;
-var selected_link = null;
-var entered_capacity_val = "";
+var context_menu_open = false; // when right-click menu for vertex is open
+var selected_link = null; // when an edge is selected
+var entered_capacity_val = ""; // the new capacity entered for an edge
+var shift_mode = false; // when 'shift' is held down
 
 function resetMouseVars() {
   mousedown_node = null;
@@ -25918,12 +25943,13 @@ function restart() {
   }).on('mousedown', function (d) {
     mousedown_node = d;
 
-    // reposition drag line
-    drag_line.style('marker-end', 'url(#end-arrow)').style('display', 'inline').attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'L' + mousedown_node.x + ',' + mousedown_node.y);
-
-    restart();
+    if (!shift_mode) {
+      // reposition drag line
+      drag_line.style('marker-end', 'url(#end-arrow)').style('display', 'inline').attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'L' + mousedown_node.x + ',' + mousedown_node.y);
+      restart();
+    }
   }).on('mouseup', function (d) {
-    if (!mousedown_node) {
+    if (!mousedown_node || shift_mode) {
       return;
     }
     mouseup_node = d;
@@ -25968,7 +25994,7 @@ function restart() {
         postAction();
       }
     }];
-  }));
+  })).call(drag);
 
   // show node IDs
   g.append('svg:text').attr('x', 0).attr('y', 4).attr('class', 'id').text(function (d) {
@@ -26002,7 +26028,7 @@ function addNewNode() {
 }
 
 function updateDragLine() {
-  if (!mousedown_node) {
+  if (!mousedown_node || shift_mode) {
     return;
   }
 
@@ -26020,22 +26046,29 @@ function hideDragLine() {
 }
 
 function keydown() {
-  if (!selected_link) {
-    return;
-  }
-
   _d2.default.event.preventDefault();
 
   var key_code = _d2.default.event.keyCode;
 
-  if (13 === key_code || 27 === key_code) {
+  if (selected_link && (13 === key_code || 27 === key_code)) {
     // enter or escape
     entered_capacity_val = "";
     selected_link = null;
     restart();
-  } else if (key_code > 47 && key_code < 58) {
+  } else if (selected_link && key_code > 47 && key_code < 58) {
     // numeric value
     updateCapacityVal(key_code - 48);
+  } else if (16 === key_code) {
+    shift_mode = true;
+  }
+}
+
+function keyup() {
+  var key_code = _d2.default.event.keyCode;
+
+  if (16 === key_code) {
+    // shift
+    shift_mode = false;
   }
 }
 
@@ -26065,7 +26098,7 @@ svg.on('mousemove', updateDragLine);
 svg.on('mouseup', hideDragLine);
 
 // keyboard event handlers
-_d2.default.select(window).on('keydown', keydown);
+_d2.default.select(window).on('keydown', keydown).on('keyup', keyup);
 
 // Button causes maximum flow to be calculated
 _d2.default.select('#calcMaxFlow').on('click', calcMaxFlow);
