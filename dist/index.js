@@ -25724,7 +25724,7 @@ var width = 960,
     height = 500,
     colors = _d2.default.scale.category10();
 
-var svg = _d2.default.select('body').append('svg').attr('oncontextmenu', 'return false;').attr('width', width).attr('height', height);
+var svg = _d2.default.select('#graph').append('svg').attr('oncontextmenu', 'return false;').attr('width', width).attr('height', height);
 
 var next_vertex_id = 0;
 
@@ -25964,9 +25964,17 @@ function hideDragLine() {
   resetMouseVars();
 }
 
+function calcMaxFlow() {
+  graph.edmondsKarp();
+  console.log(graph.max_flow);
+}
+
 svg.on('mousedown', addNewNode);
 svg.on('mousemove', updateDragLine);
 svg.on('mouseup', hideDragLine);
+
+// Button causes maximum flow to be calculated
+_d2.default.select('#calcMaxFlow').on('click', calcMaxFlow);
 
 restart();
 
@@ -26211,6 +26219,9 @@ var Graph = function () {
       if (-1 === _lodash2.default.indexOf(this.vertices, vertex)) {
         throw new Error('Source vertex must be in the graph');
       }
+      if (vertex === this.sink) {
+        throw new Error('Graph sink cannot be the source');
+      }
       this.source = vertex;
     }
   }, {
@@ -26218,6 +26229,9 @@ var Graph = function () {
     value: function setSink(vertex) {
       if (-1 === _lodash2.default.indexOf(this.vertices, vertex)) {
         throw new Error('Sink vertex must be in the graph');
+      }
+      if (vertex === this.source) {
+        throw new Error('Graph source cannot be the sink');
       }
       this.sink = vertex;
     }

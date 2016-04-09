@@ -12,7 +12,7 @@ let width = 960,
   height = 500,
   colors = d3.scale.category10();
 
-var svg = d3.select('body')
+var svg = d3.select('#graph')
   .append('svg')
   .attr('oncontextmenu', 'return false;')
   .attr('width', width)
@@ -321,8 +321,16 @@ function hideDragLine() {
   resetMouseVars();
 }
 
+function calcMaxFlow() {
+  graph.edmondsKarp();
+  console.log(graph.max_flow);
+}
+
 svg.on('mousedown', addNewNode);
 svg.on('mousemove', updateDragLine);
 svg.on('mouseup', hideDragLine);
+
+// Button causes maximum flow to be calculated
+d3.select('#calcMaxFlow').on('click', calcMaxFlow);
 
 restart();

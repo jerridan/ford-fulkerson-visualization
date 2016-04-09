@@ -119,6 +119,18 @@ describe('Graph', function () {
       graph.setSource(vertex);
       expect(graph.source).to.eql(vertex);
     });
+    it('throws an error if trying to set the sink as the source', function() {
+      let graph = new Graph();
+      let vertex = new Vertex(0);
+      graph.addVertex(vertex);
+      graph.setSource(vertex);
+      try {
+        graph.setSink(vertex);
+        expect(true).to.be.false;
+      } catch(err) {
+        expect(err).to.eql(new Error('Graph sink cannot be the source'));
+      }
+    });
   });
   describe('#setSink', function () {
     it('throws an error if the vertex is not in the graph', function () {
@@ -137,6 +149,18 @@ describe('Graph', function () {
       graph.addVertex(vertex);
       graph.setSink(vertex);
       expect(graph.sink).to.eql(vertex);
+    });
+    it('throws an error if trying to set the sink as the source', function() {
+      let graph = new Graph();
+      let vertex = new Vertex(0);
+      graph.addVertex(vertex);
+      graph.setSink(vertex);
+      try {
+        graph.setSource(vertex);
+        expect(true).to.be.false;
+      } catch(err) {
+        expect(err).to.eql(new Error('Graph source cannot be the sink'));
+      }
     });
   });
   describe('#removeSource', function () {

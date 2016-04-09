@@ -92,12 +92,18 @@ class Graph {
     if (-1 === _.indexOf(this.vertices, vertex)) {
       throw new Error('Source vertex must be in the graph');
     }
+    if(vertex === this.sink) {
+      throw new Error('Graph sink cannot be the source');
+    }
     this.source = vertex;
   }
 
   setSink(vertex) {
     if (-1 === _.indexOf(this.vertices, vertex)) {
       throw new Error('Sink vertex must be in the graph');
+    }
+    if(vertex === this.source) {
+      throw new Error('Graph source cannot be the sink');
     }
     this.sink = vertex;
   }
