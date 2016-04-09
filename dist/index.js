@@ -25748,6 +25748,7 @@ svg.append('svg:defs').append('svg:marker').attr('id', 'end-arrow').attr('viewBo
 
 svg.append('svg:defs').append('svg:marker').attr('id', 'start-arrow').attr('viewBox', '0 -5 10 10').attr('refX', 4).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M10,-5L0,0L10,5').attr('fill', '#000');
 
+// Show a draggable line when user is adding a new edge
 var drag_line = svg.append('svg:path').attr('class', 'link dragline').style('display', 'none').attr('d', 'M0,0L0,0');
 
 // handles to link and node element groups
@@ -25781,12 +25782,16 @@ function tick() {
 // mouse event variables
 var mousedown_node = null;
 var mouseup_node = null;
+var mousedown_link = null;
 
 var context_menu_open = false;
+var selected_link = null;
+var entered_capacity_val = "";
 
 function resetMouseVars() {
   mousedown_node = null;
   mouseup_node = null;
+  mousedown_link = null;
 }
 
 // update graph (called when needed)
@@ -25796,10 +25801,26 @@ function restart() {
     return d.id;
   });
 
+  // update links
+  _d2.default.selectAll('path.link').classed('selected', function (d) {
+    return d === selected_link;
+  });
+
   // add new links
   path.enter().append('svg:path').attr('class', 'link').attr('id', function (d) {
     return 'link_id_' + d.id;
-  }).style('marker-start', '').style('marker-end', 'url(#end-arrow)');
+  }).style('marker-start', '').style('marker-end', 'url(#end-arrow)').classed('selected', function (d) {
+    return d === selected_link;
+  }).on('mousedown', function (d) {
+    mousedown_link = d;
+    if (mousedown_link === selected_link) {
+      selected_link = null;
+    } else {
+      selected_link = mousedown_link;
+      entered_capacity_val = "";
+    }
+    restart();
+  });
 
   path_text = path_text.data(links, function (d) {
     return d.id;
@@ -25809,7 +25830,7 @@ function restart() {
   path_text.enter().append('g').attr('class', 'link-text').append('svg:text').style('font-size', "12px").attr("dy", "-8px").attr("dx", "5px").append('svg:textPath').attr('xlink:href', function (d) {
     return '#link_id_' + d.id;
   }).style("text-anchor", "start").attr('startOffset', '0%').attr("class", function (d) {
-    return "capacity_forward_" + d.id;
+    return "capacity_" + d.id;
   }).text(function (d) {
     return d.capacity;
   });
@@ -25928,7 +25949,7 @@ function restart() {
 }
 
 function addNewNode() {
-  if (mousedown_node || context_menu_open) {
+  if (mousedown_node || context_menu_open || mousedown_link) {
     context_menu_open = false;
     return;
   }
@@ -25964,14 +25985,51 @@ function hideDragLine() {
   resetMouseVars();
 }
 
+function keydown() {
+  if (!selected_link) {
+    return;
+  }
+
+  _d2.default.event.preventDefault();
+
+  var key_code = _d2.default.event.keyCode;
+
+  if (13 === key_code || 27 === key_code) {
+    // enter or escape
+    entered_capacity_val = "";
+    selected_link = null;
+    restart();
+  } else if (key_code > 47 && key_code < 58) {
+    // numeric value
+    updateCapacityVal(key_code - 48);
+  }
+}
+
+// updates the capacity of an edge
+function updateCapacityVal(i) {
+  if (selected_link) {
+    entered_capacity_val += i;
+    _d2.default.select('.capacity_' + selected_link.id).text(entered_capacity_val);
+    selected_link.capacity = parseInt(entered_capacity_val);
+    restart();
+  }
+}
+
 function calcMaxFlow() {
   graph.edmondsKarp();
   console.log(graph.max_flow);
+  graph.edges.map(function (e) {
+    e.resetFlow();
+  });
 }
 
+// mouse event handlers
 svg.on('mousedown', addNewNode);
 svg.on('mousemove', updateDragLine);
 svg.on('mouseup', hideDragLine);
+
+// keyboard event handlers
+_d2.default.select(window).on('keydown', keydown);
 
 // Button causes maximum flow to be calculated
 _d2.default.select('#calcMaxFlow').on('click', calcMaxFlow);
