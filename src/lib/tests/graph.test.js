@@ -79,6 +79,28 @@ describe('Graph', function () {
       g.addEdge(e2);
       expect(g.edges).to.eql([e1]);
     });
+    it('does not set "leftArched" or "rightArched" to true if there is only one edge between 2 nodes', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let e = new Edge(v0, v1);
+      g.addEdge(e);
+      expect(e.archedLeft).to.be.false;
+      expect(e.archedRight).to.be.false;
+    });
+    it('assigns edges to be arched if there are 2 edges between 2 nodes', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let e01 = new Edge(v0, v1);
+      let e10 = new Edge(v1, v0);
+      g.addEdge(e01);
+      g.addEdge(e10);
+      expect(e01.archedLeft).to.be.true;
+      expect(e01.archedRight).to.be.false;
+      expect(e10.archedLeft).to.be.false;
+      expect(e10.archedRight).to.be.true;
+    });
   });
   describe('#removeEdge', function () {
     it('removes an edge from the graph', function () {
@@ -87,6 +109,20 @@ describe('Graph', function () {
       g.addEdge(e);
       g.removeEdge(e);
       expect(g.edges).to.eql([]);
+    });
+    it('unassigns archings if an edge is removed where it was previously arched', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let e01 = new Edge(v0, v1);
+      let e10 = new Edge(v1, v0);
+      g.addEdge(e01);
+      g.addEdge(e10);
+      g.removeEdge(e10);
+      expect(e01.archedLeft).to.be.false;
+      expect(e01.archedRight).to.be.false;
+      expect(e10.archedLeft).to.be.false;
+      expect(e10.archedRight).to.be.false;
     });
   });
   describe('#get size', function () {
@@ -119,7 +155,7 @@ describe('Graph', function () {
       graph.setSource(vertex);
       expect(graph.source).to.eql(vertex);
     });
-    it('throws an error if trying to set the sink as the source', function() {
+    it('throws an error if trying to set the sink as the source', function () {
       let graph = new Graph();
       let vertex = new Vertex(0);
       graph.addVertex(vertex);
@@ -127,7 +163,7 @@ describe('Graph', function () {
       try {
         graph.setSink(vertex);
         expect(true).to.be.false;
-      } catch(err) {
+      } catch (err) {
         expect(err).to.eql(new Error('Graph sink cannot be the source'));
       }
     });
@@ -150,7 +186,7 @@ describe('Graph', function () {
       graph.setSink(vertex);
       expect(graph.sink).to.eql(vertex);
     });
-    it('throws an error if trying to set the sink as the source', function() {
+    it('throws an error if trying to set the sink as the source', function () {
       let graph = new Graph();
       let vertex = new Vertex(0);
       graph.addVertex(vertex);
@@ -158,7 +194,7 @@ describe('Graph', function () {
       try {
         graph.setSource(vertex);
         expect(true).to.be.false;
-      } catch(err) {
+      } catch (err) {
         expect(err).to.eql(new Error('Graph source cannot be the sink'));
       }
     });

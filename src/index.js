@@ -21,6 +21,7 @@ var svg = d3.select('#graph')
 let next_vertex_id = 0;
 
 let graph = sample_graph;
+//let graph = new Graph();
 next_vertex_id = graph.vertices.length;
 
 let nodes = graph.vertices;
@@ -37,7 +38,7 @@ let force = d3.layout.force()
   .nodes(nodes)
   .links(links)
   .size([width, height])
-  .linkDistance(150)
+  .linkDistance(250)
   .charge(-500)
   .on('tick', tick);
 
@@ -45,7 +46,7 @@ let force = d3.layout.force()
 svg.append('svg:defs').append('svg:marker')
   .attr('id', 'end-arrow')
   .attr('viewBox', '0 -5 10 10')
-  .attr('refX', 6)
+  .attr('refX', 11)
   .attr('markerWidth', 3)
   .attr('markerHeight', 3)
   .attr('orient', 'auto')
@@ -53,15 +54,17 @@ svg.append('svg:defs').append('svg:marker')
   .attr('d', 'M0,-5L10,0L0,5')
   .attr('fill', '#000');
 
+// define arrow markers for graph links
 svg.append('svg:defs').append('svg:marker')
-  .attr('id', 'start-arrow')
+  .attr('id', 'arc-end-arrow')
   .attr('viewBox', '0 -5 10 10')
-  .attr('refX', 4)
+  .attr('refX', 25)
+  .attr('refY', -1)
   .attr('markerWidth', 3)
   .attr('markerHeight', 3)
   .attr('orient', 'auto')
   .append('svg:path')
-  .attr('d', 'M10,-5L0,0L10,5')
+  .attr('d', 'M0,-5L10,0L0,5')
   .attr('fill', '#000');
 
 // Show a draggable line when user is adding a new edge
@@ -90,7 +93,11 @@ function tick() {
       sourceY = d.source.y + (sourcePadding * normY),
       targetX = d.target.x - (targetPadding * normX),
       targetY = d.target.y - (targetPadding * normY);
-    return 'M' + sourceX + ',' + sourceY + 'L' + targetX + ',' + targetY;
+    if (d.archedLeft || d.archedRight) {
+      return "M" + d.source.x + "," + d.source.y + "A" + dist + "," + dist + " 0 0, 1 " + d.target.x + "," + d.target.y;
+    } else {
+      return 'M' + sourceX + ',' + sourceY + 'L' + targetX + ',' + targetY;
+    }
   });
 
   circle.attr('transform', function (d) {
@@ -124,6 +131,11 @@ function restart() {
   d3.selectAll('path.link')
     .classed('selected', function (d) {
       return d === selected_link;
+    })
+    .style('marker-end', function (d) {
+      if (d) {
+        return d.archedLeft || d.archedRight ? 'url(#arc-end-arrow)' : 'url(#end-arrow)';
+      }
     });
 
   // add new links
@@ -132,8 +144,9 @@ function restart() {
     .attr('id', function (d) {
       return 'link_id_' + d.id;
     })
-    .style('marker-start', '')
-    .style('marker-end', 'url(#end-arrow)')
+    .style('marker-end', function (d) {
+      return d.archedLeft || d.archedRight ? 'url(#arc-end-arrow)' : 'url(#end-arrow)';
+    })
     .classed('selected', function (d) {
       return d === selected_link;
     })
@@ -152,14 +165,30 @@ function restart() {
     return d.id;
   });
 
-  // Add text for each link
-  path_text.enter()
+  d3.selectAll('.capacity-text')
+    .attr("dy", function (d) {
+      return d.archedLeft || d.archedRight ? "-8px" : "-8px";
+    })
+    .attr("dx", function (d) {
+      return d.archedLeft || d.archedRight ? "25px" : "10px";
+    });
+
+
+  let link_text = path_text.enter()
     .append('g')
-    .attr('class', 'link-text')
+    .attr('class', 'link-text');
+
+  // Show capacity for each link
+  link_text
     .append('svg:text')
+    .attr('class', 'capacity-text')
     .style('font-size', "12px")
-    .attr("dy", "-8px")
-    .attr("dx", "5px")
+    .attr("dy", function (d) {
+      return d.archedLeft || d.archedRight ? "-8px" : "-8px";
+    })
+    .attr("dx", function (d) {
+      return d.archedLeft || d.archedRight ? "25px" : "10px";
+    })
     .append('svg:textPath')
     .attr('xlink:href', function (d) {
       return '#link_id_' + d.id;
@@ -171,6 +200,30 @@ function restart() {
     })
     .text(function (d) {
       return d.capacity;
+    });
+
+  // Show flow for each link
+  link_text
+    .append('svg:text')
+    .attr('class', 'flow-text')
+    .style('font-size', "12px")
+    .attr("dy", function (d) {
+      return d.archedLeft ? "-8px" : "-8px";
+    })
+    .attr("dx", function (d) {
+      return d.archedLeft ? "12px" : "18px";
+    })
+    .append('svg:textPath')
+    .attr('xlink:href', function (d) {
+      return '#link_id_' + d.id;
+    })
+    .style("text-anchor", "start")
+    .attr('startOffset', '80%')
+    .attr("class", function (d) {
+      return "flow_" + d.id;
+    })
+    .text(function (d) {
+      return d.flow;
     });
 
   // remove old links and their text
@@ -205,7 +258,7 @@ function restart() {
 
   g.append('svg:circle')
     .attr('class', 'node')
-    .attr('r', 12)
+    .attr('r', 20)
     .style('fill', function (d) {
       return colors(d.id);
     })
@@ -236,9 +289,7 @@ function restart() {
       if (!mousedown_node) {
         return;
       }
-
       mouseup_node = d;
-
       drag_line
         .style('display', 'none')
         .style('marker-end', '');
@@ -248,7 +299,6 @@ function restart() {
         resetMouseVars();
         return;
       }
-
       // Edge always drawn pointing from source to target
       let edge = new Edge(mousedown_node, mouseup_node);
       graph.addEdge(edge);
@@ -376,6 +426,8 @@ function updateCapacityVal(i) {
 function calcMaxFlow() {
   graph.edmondsKarp();
   console.log(graph.max_flow);
+
+  // edge capacities must be reset, or will be increased by updateCapacityVal
   graph.edges.map(function (e) {
     e.resetFlow();
   });

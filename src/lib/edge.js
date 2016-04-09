@@ -17,6 +17,8 @@ class Edge {
     this.id = uuid.v4();
     this.flow = 0;
     this.inFlowPath = false;
+    this.archedLeft = false;
+    this.archedRight = false;
   }
 
   toJSON() {

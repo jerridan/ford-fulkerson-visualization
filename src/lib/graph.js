@@ -71,11 +71,21 @@ class Graph {
   }
 
   addEdge(edge) {
+    // do not allow clones of an edge
     let clone_index = _.findIndex(this.edges, function (e) {
       return (e.id === edge.id) || (e.source.id === edge.source.id && e.target.id === edge.target.id);
     });
 
     if (-1 === clone_index) {
+      // if there is another node going in the opposite direction, edges will need to be arched in display
+      let evil_twin_index = _.findIndex(this.edges, function (e) {
+        return e.source.id === edge.target.id && e.target.id === edge.source.id;
+      });
+
+      if (-1 !== evil_twin_index) {
+        this.edges[evil_twin_index].archedLeft = true;
+        edge.archedRight = true;
+      }
       this.edges.push(edge);
       this.addVertex(edge.source);
       this.addVertex(edge.target);
@@ -83,6 +93,18 @@ class Graph {
   }
 
   removeEdge(edge) {
+    // if the edge is arched, remove it and its evil twin's arches
+    if (edge.archedLeft || edge.archedRight) {
+      edge.archedLeft = false;
+      edge.archedRight = false;
+      let evil_twin_index = _.findIndex(this.edges, function (e) {
+        return e.source.id === edge.target.id && e.target.id === edge.source.id;
+      });
+      if(-1 !== evil_twin_index) {
+        this.edges[evil_twin_index].archedLeft = false;
+        this.edges[evil_twin_index].archedRight = false;
+      }
+    }
     _.remove(this.edges, function (e) {
       return e.id === edge.id;
     });
@@ -92,7 +114,7 @@ class Graph {
     if (-1 === _.indexOf(this.vertices, vertex)) {
       throw new Error('Source vertex must be in the graph');
     }
-    if(vertex === this.sink) {
+    if (vertex === this.sink) {
       throw new Error('Graph sink cannot be the source');
     }
     this.source = vertex;
@@ -102,7 +124,7 @@ class Graph {
     if (-1 === _.indexOf(this.vertices, vertex)) {
       throw new Error('Sink vertex must be in the graph');
     }
-    if(vertex === this.source) {
+    if (vertex === this.source) {
       throw new Error('Graph source cannot be the sink');
     }
     this.sink = vertex;
