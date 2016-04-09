@@ -25726,7 +25726,10 @@ var width = 960,
 
 var svg = _d2.default.select('body').append('svg').attr('oncontextmenu', 'return false;').attr('width', width).attr('height', height);
 
+var next_vertex_id = 0;
+
 var graph = _sample_graph2.default;
+next_vertex_id = graph.vertices.length;
 
 var nodes = graph.vertices;
 var links = graph.edges;
@@ -25749,6 +25752,7 @@ var drag_line = svg.append('svg:path').attr('class', 'link dragline').style('dis
 
 // handles to link and node element groups
 var path = svg.append('svg:g').selectAll('path'),
+    path_text = svg.append('svg:g').selectAll('g.link-text'),
     circle = svg.append('svg:g').selectAll('g');
 
 // update force layout (called automatically each iteration)
@@ -25792,9 +25796,17 @@ function restart() {
     return d.id;
   });
 
-  var linkGroups = path.enter().append('svg:g');
+  // add new links
+  path.enter().append('svg:path').attr('class', 'link').attr('id', function (d) {
+    return 'link_id_' + d.id;
+  }).style('marker-start', '').style('marker-end', 'url(#end-arrow)');
 
-  linkGroups.append('svg:text').style('font-size', "12px").attr("dy", "-8px").attr("dx", "5px").append('svg:textPath').attr('xlink:href', function (d) {
+  path_text = path_text.data(links, function (d) {
+    return d.id;
+  });
+
+  // Add text for each link
+  path_text.enter().append('g').attr('class', 'link-text').append('svg:text').style('font-size', "12px").attr("dy", "-8px").attr("dx", "5px").append('svg:textPath').attr('xlink:href', function (d) {
     return '#link_id_' + d.id;
   }).style("text-anchor", "start").attr('startOffset', '0%').attr("class", function (d) {
     return "capacity_forward_" + d.id;
@@ -25802,13 +25814,9 @@ function restart() {
     return d.capacity;
   });
 
-  // add new links
-  path.enter().append('svg:path').attr('class', 'link').attr('id', function (d) {
-    return 'link_id_' + d.id;
-  }).style('marker-start', '').style('marker-end', 'url(#end-arrow)');
-
-  // remove old links
+  // remove old links and their text
   path.exit().remove();
+  path_text.exit().remove();
 
   // circle (node) group
   circle = circle.data(nodes, function (d) {
@@ -25881,19 +25889,28 @@ function restart() {
     var selected_node = mousedown_node; // Grab node before hideDragLine resets it
     context_menu_open = true;
     hideDragLine();
+    function postAction() {
+      context_menu_open = false;
+      restart();
+    }
+
     return [{
+      title: 'Remove vertex',
+      action: function action() {
+        graph.removeVertex(selected_node);
+        postAction();
+      }
+    }, {
       title: 'Set as source',
       action: function action() {
         graph.setSource(selected_node);
-        context_menu_open = false;
-        restart();
+        postAction();
       }
     }, {
       title: 'Set as sink',
       action: function action() {
         graph.setSink(selected_node);
-        context_menu_open = false;
-        restart();
+        postAction();
       }
     }];
   }));
@@ -25920,7 +25937,7 @@ function addNewNode() {
 
   var position = _d2.default.mouse(this);
   var id = nodes.length;
-  var vertex = new _vertex2.default(id);
+  var vertex = new _vertex2.default(next_vertex_id++);
   graph.addVertex(vertex);
 
   nodes[id].x = position[0];
@@ -26152,6 +26169,23 @@ var Graph = function () {
       }
     }
   }, {
+    key: 'removeVertex',
+    value: function removeVertex(vertex) {
+      var _this = this;
+
+      var edges_to_remove = _lodash2.default.filter(this.edges, function (e) {
+        return e.source.id === vertex.id || e.target.id === vertex.id;
+      });
+
+      edges_to_remove.map(function (e) {
+        _this.removeEdge(e);
+      });
+
+      _lodash2.default.remove(this.vertices, function (v) {
+        return v.id === vertex.id;
+      });
+    }
+  }, {
     key: 'addEdge',
     value: function addEdge(edge) {
       var clone_index = _lodash2.default.findIndex(this.edges, function (e) {
@@ -26163,6 +26197,13 @@ var Graph = function () {
         this.addVertex(edge.source);
         this.addVertex(edge.target);
       }
+    }
+  }, {
+    key: 'removeEdge',
+    value: function removeEdge(edge) {
+      _lodash2.default.remove(this.edges, function (e) {
+        return e.id === edge.id;
+      });
     }
   }, {
     key: 'setSource',

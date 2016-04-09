@@ -54,6 +54,22 @@ class Graph {
     }
   }
 
+  removeVertex(vertex) {
+    let _this = this;
+
+    let edges_to_remove = _.filter(this.edges, function (e) {
+      return e.source.id === vertex.id || e.target.id === vertex.id;
+    });
+
+    edges_to_remove.map(function (e) {
+      _this.removeEdge(e);
+    });
+
+    _.remove(this.vertices, function (v) {
+      return v.id === vertex.id;
+    });
+  }
+
   addEdge(edge) {
     let clone_index = _.findIndex(this.edges, function (e) {
       return (e.id === edge.id) || (e.source.id === edge.source.id && e.target.id === edge.target.id);
@@ -64,6 +80,12 @@ class Graph {
       this.addVertex(edge.source);
       this.addVertex(edge.target);
     }
+  }
+
+  removeEdge(edge) {
+    _.remove(this.edges, function (e) {
+      return e.id === edge.id;
+    });
   }
 
   setSource(vertex) {

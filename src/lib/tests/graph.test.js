@@ -28,6 +28,25 @@ describe('Graph', function () {
       expect(g.vertices).to.eql([v1]);
     });
   });
+  describe('#removeVertex', function () {
+    it('removes a vertex from a graph', function () {
+      let g = new Graph();
+      let v = new Vertex(0);
+      g.addVertex(v);
+      g.removeVertex(v);
+      expect(g.vertices).to.eql([]);
+    });
+    it('removes any edges associated with the removed vertex', function () {
+      let g = new Graph();
+      let v1 = new Vertex(0);
+      let v2 = new Vertex(1);
+      let e = new Edge(v1, v2);
+      g.addEdge(e);
+      g.removeVertex(v1);
+      expect(g.vertices).to.eql([v2]);
+      expect(g.edges).to.eql([]);
+    });
+  });
   describe('#addEdge', function () {
     it('adds an edge to the graph edges', function () {
       let g = new Graph();
@@ -59,6 +78,15 @@ describe('Graph', function () {
       g.addEdge(e1);
       g.addEdge(e2);
       expect(g.edges).to.eql([e1]);
+    });
+  });
+  describe('#removeEdge', function () {
+    it('removes an edge from the graph', function () {
+      let g = new Graph();
+      let e = new Edge();
+      g.addEdge(e);
+      g.removeEdge(e);
+      expect(g.edges).to.eql([]);
     });
   });
   describe('#get size', function () {

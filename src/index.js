@@ -18,7 +18,10 @@ var svg = d3.select('body')
   .attr('width', width)
   .attr('height', height);
 
+let next_vertex_id = 0;
+
 let graph = sample_graph;
+next_vertex_id = graph.vertices.length;
 
 let nodes = graph.vertices;
 let links = graph.edges;
@@ -68,6 +71,7 @@ let drag_line = svg.append('svg:path')
 
 // handles to link and node element groups
 let path = svg.append('svg:g').selectAll('path'),
+  path_text = svg.append('svg:g').selectAll('g.link-text'),
   circle = svg.append('svg:g').selectAll('g');
 
 // update force layout (called automatically each iteration)
@@ -111,9 +115,24 @@ function restart() {
     return d.id;
   });
 
-  let linkGroups = path.enter().append('svg:g');
+  // add new links
+  path.enter().append('svg:path')
+    .attr('class', 'link')
+    .attr('id', function (d) {
+      return 'link_id_' + d.id;
+    })
+    .style('marker-start', '')
+    .style('marker-end', 'url(#end-arrow)');
 
-  linkGroups.append('svg:text')
+  path_text = path_text.data(links, function (d) {
+    return d.id;
+  });
+
+  // Add text for each link
+  path_text.enter()
+    .append('g')
+    .attr('class', 'link-text')
+    .append('svg:text')
     .style('font-size', "12px")
     .attr("dy", "-8px")
     .attr("dx", "5px")
@@ -130,17 +149,9 @@ function restart() {
       return d.capacity;
     });
 
-  // add new links
-  path.enter().append('svg:path')
-    .attr('class', 'link')
-    .attr('id', function (d) {
-      return 'link_id_' + d.id;
-    })
-    .style('marker-start', '')
-    .style('marker-end', 'url(#end-arrow)');
-
-  // remove old links
+  // remove old links and their text
   path.exit().remove();
+  path_text.exit().remove();
 
   // circle (node) group
   circle = circle.data(nodes, function (d) {
@@ -225,21 +236,31 @@ function restart() {
       let selected_node = mousedown_node; // Grab node before hideDragLine resets it
       context_menu_open = true;
       hideDragLine();
+      function postAction() {
+        context_menu_open = false;
+        restart();
+      }
+
       return [
+        {
+          title: 'Remove vertex',
+          action: function () {
+            graph.removeVertex(selected_node);
+            postAction();
+          }
+        },
         {
           title: 'Set as source',
           action: function () {
             graph.setSource(selected_node);
-            context_menu_open = false;
-            restart();
+            postAction();
           }
         },
         {
           title: 'Set as sink',
           action: function () {
             graph.setSink(selected_node);
-            context_menu_open = false;
-            restart();
+            postAction();
           }
         }
       ]
@@ -271,7 +292,7 @@ function addNewNode() {
 
   let position = d3.mouse(this);
   let id = nodes.length;
-  let vertex = new Vertex(id);
+  let vertex = new Vertex(next_vertex_id++);
   graph.addVertex(vertex);
 
   nodes[id].x = position[0];
