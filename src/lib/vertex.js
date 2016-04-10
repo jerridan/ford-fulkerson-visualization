@@ -3,6 +3,7 @@ class Vertex {
     this.id = id;
     this.visited = false;
     this.pre = null;
+    this.fat = 0;
   }
 
   toJSON() {

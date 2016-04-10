@@ -243,15 +243,6 @@ describe('Graph', function () {
         expect(err).to.eql(new Error('Graph must have a sink'));
       }
     });
-    it('shows a vertex as visited if it is the source and the source is visited', function () {
-      let g = new Graph();
-      let v = new Vertex(0);
-      g.addVertex(v);
-      g.setSource(v);
-      expect(v.visited).to.be.false;
-      g.source.visited = true;
-      expect(v.visited).to.be.true;
-    });
     it('returns the increased flow along an augmented path', function () {
       let g = new Graph();
       let v0 = new Vertex(0);
@@ -324,6 +315,325 @@ describe('Graph', function () {
       g.setSink(v5);
 
       let flow_increase = g.bfs();
+      expect(flow_increase).to.eql(0);
+    });
+    it('returns 0 if the source is not physically connected to the sink', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let v2 = new Vertex(2);
+      let v3 = new Vertex(3);
+      let v4 = new Vertex(4);
+      let v5 = new Vertex(5);
+
+      let e01 = new Edge(v0, v1, 8);
+      let e02 = new Edge(v0, v2, 5);
+      let e12 = new Edge(v1, v2, 5);
+      let e34 = new Edge(v3, v4, 5);
+      let e35 = new Edge(v3, v5, 11);
+      let e43 = new Edge(v4, v3, 3);
+      let e45 = new Edge(v4, v5, 2);
+
+      g.addEdge(e01);
+      g.addEdge(e02);
+      g.addEdge(e12);
+      g.addEdge(e34);
+      g.addEdge(e35);
+      g.addEdge(e43);
+      g.addEdge(e45);
+
+      g.setSource(v0);
+      g.setSink(v5);
+
+      let flow_increase = g.bfs();
+      expect(flow_increase).to.eql(0);
+    });
+  });
+  describe('#dfs', function () {
+    it('returns 0 if no vertices', function () {
+      let graph = new Graph();
+      expect(graph.dfs()).to.eql(0);
+    });
+    it('returns 0 if no edges', function () {
+      let graph = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      graph.addVertex(v0);
+      graph.addVertex(v1);
+      graph.setSource(v0);
+      graph.setSink(v1);
+      expect(graph.dfs()).to.eql(0);
+    });
+    it('throws an error if the source is null', function () {
+      let graph = new Graph();
+      let vertex = new Vertex(0);
+      graph.addVertex(vertex);
+      try {
+        graph.dfs();
+        expect(true).to.be.false;
+      } catch (err) {
+        expect(err).to.eql(new Error('Graph must have a source'));
+      }
+    });
+    it('throws an error if the sink is null', function () {
+      let graph = new Graph();
+      let vertex = new Vertex(0);
+      graph.addVertex(vertex);
+      graph.setSource(vertex);
+      try {
+        graph.dfs();
+        expect(true).to.be.false;
+      } catch (err) {
+        expect(err).to.eql(new Error('Graph must have a sink'));
+      }
+    });
+    it('returns the increased flow along an augmented path', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let v2 = new Vertex(2);
+      let v3 = new Vertex(3);
+      let v4 = new Vertex(4);
+      let v5 = new Vertex(5);
+
+      let e01 = new Edge(v0, v1, 8);
+      let e02 = new Edge(v0, v2, 5);
+      let e12 = new Edge(v1, v2, 5);
+      let e13 = new Edge(v1, v3, 5);
+      let e24 = new Edge(v2, v4, 8);
+      let e34 = new Edge(v3, v4, 5);
+      let e35 = new Edge(v3, v5, 11);
+      let e43 = new Edge(v4, v3, 3);
+      let e45 = new Edge(v4, v5, 2);
+
+      g.addEdge(e01);
+      g.addEdge(e02);
+      g.addEdge(e12);
+      g.addEdge(e13);
+      g.addEdge(e24);
+      g.addEdge(e34);
+      g.addEdge(e35);
+      g.addEdge(e43);
+      g.addEdge(e45);
+
+      g.setSource(v0);
+      g.setSink(v5);
+
+      let flow_increase = g.dfs();
+      g.flow_path.map(function (p) {
+        expect(p.flow).to.eql(flow_increase);
+      });
+      expect(flow_increase).to.eql(2);
+      expect(g.max_flow).to.eql(flow_increase);
+    });
+    it('returns 0 flow if there is no augmenting path from source to sink', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let v2 = new Vertex(2);
+      let v3 = new Vertex(3);
+      let v4 = new Vertex(4);
+      let v5 = new Vertex(5);
+
+      let e01 = new Edge(v0, v1, 8);
+      let e02 = new Edge(v0, v2, 5);
+      let e12 = new Edge(v1, v2, 5);
+      let e13 = new Edge(v1, v3, 5);
+      let e24 = new Edge(v2, v4, 8);
+      let e34 = new Edge(v3, v4, 5);
+      let e35 = new Edge(v3, v5, 0);
+      let e43 = new Edge(v4, v3, 3);
+      let e45 = new Edge(v4, v5, 0);
+
+      g.addEdge(e01);
+      g.addEdge(e02);
+      g.addEdge(e12);
+      g.addEdge(e13);
+      g.addEdge(e24);
+      g.addEdge(e34);
+      g.addEdge(e35);
+      g.addEdge(e43);
+      g.addEdge(e45);
+
+      g.setSource(v0);
+      g.setSink(v5);
+
+      let flow_increase = g.dfs();
+      expect(flow_increase).to.eql(0);
+    });
+    it('returns 0 if the source is not physically connected to the sink', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let v2 = new Vertex(2);
+      let v3 = new Vertex(3);
+      let v4 = new Vertex(4);
+      let v5 = new Vertex(5);
+
+      let e01 = new Edge(v0, v1, 8);
+      let e02 = new Edge(v0, v2, 5);
+      let e12 = new Edge(v1, v2, 5);
+      let e34 = new Edge(v3, v4, 5);
+      let e35 = new Edge(v3, v5, 11);
+      let e43 = new Edge(v4, v3, 3);
+      let e45 = new Edge(v4, v5, 2);
+
+      g.addEdge(e01);
+      g.addEdge(e02);
+      g.addEdge(e12);
+      g.addEdge(e34);
+      g.addEdge(e35);
+      g.addEdge(e43);
+      g.addEdge(e45);
+
+      g.setSource(v0);
+      g.setSink(v5);
+
+      let flow_increase = g.dfs();
+      expect(flow_increase).to.eql(0);
+    });
+  });
+  describe('#fattestPath', function () {
+    it('returns 0 if no vertices', function () {
+      let graph = new Graph();
+      expect(graph.fattestPath()).to.eql(0);
+    });
+    it('returns 0 if no edges', function () {
+      let graph = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      graph.addVertex(v0);
+      graph.addVertex(v1);
+      graph.setSource(v0);
+      graph.setSink(v1);
+      expect(graph.fattestPath()).to.eql(0);
+    });
+    it('throws an error if the source is null', function () {
+      let graph = new Graph();
+      let vertex = new Vertex(0);
+      graph.addVertex(vertex);
+      try {
+        graph.fattestPath();
+        expect(true).to.be.false;
+      } catch (err) {
+        expect(err).to.eql(new Error('Graph must have a source'));
+      }
+    });
+    it('throws an error if the sink is null', function () {
+      let graph = new Graph();
+      let vertex = new Vertex(0);
+      graph.addVertex(vertex);
+      graph.setSource(vertex);
+      try {
+        graph.fattestPath();
+        expect(true).to.be.false;
+      } catch (err) {
+        expect(err).to.eql(new Error('Graph must have a sink'));
+      }
+    });
+    it('returns the increased flow along the fattest augmented path', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let v2 = new Vertex(2);
+      let v3 = new Vertex(3);
+      let v4 = new Vertex(4);
+      let v5 = new Vertex(5);
+
+      let e01 = new Edge(v0, v1, 1);
+      let e02 = new Edge(v0, v2, 3);
+      let e12 = new Edge(v1, v2, 1);
+      let e13 = new Edge(v1, v3, 1);
+      let e24 = new Edge(v2, v4, 3);
+      let e34 = new Edge(v3, v4, 1);
+      let e35 = new Edge(v3, v5, 3);
+      let e43 = new Edge(v4, v3, 3);
+      let e45 = new Edge(v4, v5, 1);
+
+      g.addEdge(e01);
+      g.addEdge(e02);
+      g.addEdge(e12);
+      g.addEdge(e13);
+      g.addEdge(e24);
+      g.addEdge(e34);
+      g.addEdge(e35);
+      g.addEdge(e43);
+      g.addEdge(e45);
+
+      g.setSource(v0);
+      g.setSink(v5);
+
+      let flow_increase = g.fattestPath();
+      g.flow_path.map(function (p) {
+        expect(p.flow).to.eql(flow_increase);
+      });
+      expect(flow_increase).to.eql(3);
+      expect(g.max_flow).to.eql(flow_increase);
+    });
+    it('returns 0 flow if there is no augmenting path from source to sink', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let v2 = new Vertex(2);
+      let v3 = new Vertex(3);
+      let v4 = new Vertex(4);
+      let v5 = new Vertex(5);
+
+      let e01 = new Edge(v0, v1, 8);
+      let e02 = new Edge(v0, v2, 5);
+      let e12 = new Edge(v1, v2, 5);
+      let e13 = new Edge(v1, v3, 5);
+      let e24 = new Edge(v2, v4, 8);
+      let e34 = new Edge(v3, v4, 5);
+      let e35 = new Edge(v3, v5, 0);
+      let e43 = new Edge(v4, v3, 3);
+      let e45 = new Edge(v4, v5, 0);
+
+      g.addEdge(e01);
+      g.addEdge(e02);
+      g.addEdge(e12);
+      g.addEdge(e13);
+      g.addEdge(e24);
+      g.addEdge(e34);
+      g.addEdge(e35);
+      g.addEdge(e43);
+      g.addEdge(e45);
+
+      g.setSource(v0);
+      g.setSink(v5);
+
+      let flow_increase = g.fattestPath();
+      expect(flow_increase).to.eql(0);
+    });
+    it('returns 0 if the source is not physically connected to the sink', function () {
+      let g = new Graph();
+      let v0 = new Vertex(0);
+      let v1 = new Vertex(1);
+      let v2 = new Vertex(2);
+      let v3 = new Vertex(3);
+      let v4 = new Vertex(4);
+      let v5 = new Vertex(5);
+
+      let e01 = new Edge(v0, v1, 8);
+      let e02 = new Edge(v0, v2, 5);
+      let e12 = new Edge(v1, v2, 5);
+      let e34 = new Edge(v3, v4, 5);
+      let e35 = new Edge(v3, v5, 11);
+      let e43 = new Edge(v4, v3, 3);
+      let e45 = new Edge(v4, v5, 2);
+
+      g.addEdge(e01);
+      g.addEdge(e02);
+      g.addEdge(e12);
+      g.addEdge(e34);
+      g.addEdge(e35);
+      g.addEdge(e43);
+      g.addEdge(e45);
+
+      g.setSource(v0);
+      g.setSink(v5);
+
+      let flow_increase = g.fattestPath();
       expect(flow_increase).to.eql(0);
     });
   });

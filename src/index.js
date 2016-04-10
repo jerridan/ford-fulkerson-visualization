@@ -338,7 +338,8 @@ function restart() {
       restart();
     })
     .on('contextmenu', d3ContextMenu(function () {
-      let selected_node = mousedown_node; // Grab node before hideDragLine resets it
+      // Grab node before hideDragLine resets it
+      let selected_node = mousedown_node;
       context_menu_open = true;
       hideDragLine();
       function postAction() {
