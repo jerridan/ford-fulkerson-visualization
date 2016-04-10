@@ -16,7 +16,6 @@ class Edge {
     }
     this.id = uuid.v4();
     this.flow = 0;
-    this.in_flow_path = false;
     this.has_evil_twin = false;
   }
 

@@ -25967,7 +25967,8 @@ function restart() {
     resetMouseVars();
     restart();
   }).on('contextmenu', (0, _d3_context_menu2.default)(function () {
-    var selected_node = mousedown_node; // Grab node before hideDragLine resets it
+    // Grab node before hideDragLine resets it
+    var selected_node = mousedown_node;
     context_menu_open = true;
     hideDragLine();
     function postAction() {
@@ -26099,7 +26100,9 @@ function edmondsKarp() {
   _d2.default.select('#calc-max-flow-btn').attr('disabled', 'disabled');
   _d2.default.select('#reset-flow-btn').attr('disabled', 'disabled');
 
-  var augmenting_paths = [];
+  var saved_info = {};
+  saved_info.flow_increases = [];
+  saved_info.augmenting_paths = [];
   var flow_increase = 0;
 
   var interval_id = setInterval(function () {
@@ -26111,7 +26114,7 @@ function edmondsKarp() {
 
     // use breadth first search to get flow increase
     try {
-      flow_increase = graph.bfs();
+      flow_increase = graph.fattestPath();
     } catch (err) {
       flow_increase = 0;
     }
@@ -26124,7 +26127,8 @@ function edmondsKarp() {
     });
 
     // clone flow path and save result
-    augmenting_paths.push(_.map(graph.flow_path, _.clone));
+    saved_info.augmenting_paths.push(_.map(graph.flow_path, _.clone));
+    saved_info.flow_increases.push(flow_increase);
 
     graph.flow_path = [];
 
@@ -26137,36 +26141,38 @@ function edmondsKarp() {
       graph.flow_path = [];
 
       // display number of iterations it took to find flow
-      _d2.default.select('#number-iterations').text(augmenting_paths.length - 1);
+      _d2.default.select('#number-iterations').text(saved_info.augmenting_paths.length - 1);
 
-      // display augmenting paths
-      displayAugmentingPaths(augmenting_paths);
+      // display saved info
+      displaySavedInfo(saved_info);
 
       // enable buttons again
       _d2.default.select('#calc-max-flow-btn').attr('disabled', null);
       _d2.default.select('#reset-flow-btn').attr('disabled', null);
 
-      _.flatten(augmenting_paths).map(function (edge) {
-        _d2.default.select('#link_id_' + edge.id).classed('has-flow', true);
+      _.flatten(saved_info.augmenting_paths).map(function (edge) {
+        _d2.default.select('#link_id_' + edge.id).classed('augmented', false).classed('has-flow', true);
       });
       restart();
     }
   }, 1000);
 }
 
-function displayAugmentingPaths(augmenting_paths) {
+function displaySavedInfo(saved_info) {
+
   var augmenting_paths_text = "<div class='info'>Augmenting Paths:</div><ul>";
 
-  augmenting_paths.map(function (path, index) {
-    if (index === augmenting_paths.length - 1) {
+  saved_info.augmenting_paths.map(function (path, index) {
+    if (index === saved_info.augmenting_paths.length - 1) {
       return;
     }
     augmenting_paths_text += "<li>Path " + (index + 1);
+    augmenting_paths_text += "<ul>Flow Increase: " + saved_info.flow_increases[index] + "</ul>";
     path.map(function (edge) {
       augmenting_paths_text += "<ul>";
       augmenting_paths_text += "<li>Source: " + edge.source.id + "</li>";
       augmenting_paths_text += "<li>Target: " + edge.target.id + "</li>";
-      augmenting_paths_text += "<li>Flow: " + edge.flow + "</li>";
+      augmenting_paths_text += "<li>Total Flow: " + edge.flow + "</li>";
       augmenting_paths_text += "<li>Remaining capacity: " + edge.capacity + "</li>";
       augmenting_paths_text += "</ul>";
     });
@@ -26309,7 +26315,6 @@ var Edge = function () {
     }
     this.id = _uuid2.default.v4();
     this.flow = 0;
-    this.in_flow_path = false;
     this.has_evil_twin = false;
   }
 
@@ -26509,7 +26514,7 @@ var Graph = function () {
       this.source = null;
     }
 
-    // Uses BFS to find an augmenting path
+    // Uses Breadth First Search to find an augmenting path
     // Returns the increase in flow along the new path
 
   }, {
@@ -26539,6 +26544,8 @@ var Graph = function () {
       var queue = [g.source];
       var done = false;
 
+      // visit each node according to BFS and push to queue
+
       var _loop = function _loop() {
         var u = queue.shift();
         g.edges.map(function (e) {
@@ -26546,7 +26553,11 @@ var Graph = function () {
             var v = e.target;
             v.visited = true;
             v.pre = u;
+
+            // add new node to the end of the queue
             queue.push(v);
+
+            // if the sink is found, we're done
             if (v === g.sink) {
               done = true;
             }
@@ -26558,43 +26569,139 @@ var Graph = function () {
         _loop();
       }
 
+      // if the sink was not found, no increase in flow
       if (!g.sink.visited) {
         return 0;
       }
 
-      done = false;
-      var min_capacity = Number.MAX_VALUE;
-      var head = g.sink;
+      return this._buildFlowPath();
+    }
+
+    // Uses Depth First Search to find an augmenting path
+    // Returns the increase in flow along the new path
+
+  }, {
+    key: 'dfs',
+    value: function dfs() {
+      var g = this;
+
+      if (_lodash2.default.isEmpty(g.vertices)) {
+        return 0;
+      }
+      if (null === g.source) {
+        throw new Error('Graph must have a source');
+      }
+      if (null === g.sink) {
+        throw new Error('Graph must have a sink');
+      }
+      if (_lodash2.default.isEmpty(g.edges)) {
+        return 0;
+      }
+
+      g.vertices.map(function (v) {
+        v.visited = false;
+        v.pre = null;
+      });
+
+      g.source.visited = true;
+      var queue = [g.source];
+      var done = false;
+
+      // visit each node according to DFS and push to queue
 
       var _loop2 = function _loop2() {
-        var tail = head.pre;
+        var u = queue.shift();
         g.edges.map(function (e) {
-          if (e.source === tail && e.target === head) {
-            g.flow_path.push(e);
-            if (e.capacity < min_capacity) {
-              min_capacity = e.capacity;
+          if (e.source === u && e.capacity > 0 && !e.target.visited) {
+            var v = e.target;
+            v.visited = true;
+            v.pre = u;
+
+            // add new node to the front of the queue
+            queue.unshift(v);
+
+            // if the sink is found, we're done
+            if (v === g.sink) {
+              done = true;
             }
           }
         });
-        head = tail;
-        if (head === g.source) {
-          done = true;
-        }
       };
 
-      while (!done && null != head) {
+      while (queue.length > 0 && !done) {
         _loop2();
       }
 
-      if (min_capacity !== Number.MAX_VALUE) {
-        g.flow_path.map(function (edge_with_flow) {
-          edge_with_flow.addFlow(min_capacity);
-        });
-        g.max_flow += min_capacity;
+      // if the sink was not found, no increase in flow
+      if (!g.sink.visited) {
+        return 0;
       }
 
-      g.flow_path.reverse();
-      return min_capacity;
+      return this._buildFlowPath();
+    }
+  }, {
+    key: 'fattestPath',
+    value: function fattestPath() {
+      var g = this;
+
+      if (_lodash2.default.isEmpty(g.vertices)) {
+        return 0;
+      }
+      if (null === g.source) {
+        throw new Error('Graph must have a source');
+      }
+      if (null === g.sink) {
+        throw new Error('Graph must have a sink');
+      }
+      if (_lodash2.default.isEmpty(g.edges)) {
+        return 0;
+      }
+
+      var queue = [];
+
+      // set fatness of all vertices to 0
+      g.vertices.map(function (vertex) {
+        vertex.fat = 0;
+        queue.push(vertex);
+      });
+
+      // set fatness to source as very large
+      g.source.fat = Number.MAX_VALUE;
+
+      var _loop3 = function _loop3() {
+
+        // get fattest vertex and remove from queue
+        var fattest = _lodash2.default.maxBy(queue, 'fat');
+        _lodash2.default.pull(queue, fattest);
+
+        // if the fattest value is 0, we are finished
+        if (0 === fattest.fat) {
+          return 'break';
+        }
+
+        // update fat value for neighbours of fattest vertex
+        g.edges.map(function (edge) {
+          if (edge.source === fattest && edge.capacity > 0) {
+            if (edge.target.fat < Math.min(fattest.fat, edge.capacity)) {
+              edge.target.fat = Math.min(fattest.fat, edge.capacity);
+              edge.target.pre = fattest;
+            }
+          }
+        });
+      };
+
+      while (queue.length > 0) {
+        var _ret3 = _loop3();
+
+        if (_ret3 === 'break') break;
+      }
+
+      // if the sink could not be reached by any vertex, flow is 0
+      if (null === g.sink.pre) {
+        return 0;
+      }
+
+      return this._buildFlowPath();
     }
   }, {
     key: 'edmondsKarp',
@@ -26609,6 +26716,52 @@ var Graph = function () {
         g.flow_path = [];
       }
       g.flow_path = [];
+    }
+
+    /** HELPER FUNCTIONS **/
+
+    // Backtracks from the sink to the source to
+    // build the flow path
+
+  }, {
+    key: '_buildFlowPath',
+    value: function _buildFlowPath() {
+      var g = this;
+
+      var done = false;
+      var min_capacity = Number.MAX_VALUE;
+      var head = g.sink;
+      while (!done && null != head) {
+        var tail = head.pre;
+
+        // find the edge connecting head and tail vertices
+        var edge = _lodash2.default.find(g.edges, { 'source': tail, 'target': head });
+        g.flow_path.push(edge);
+        if (edge.capacity < min_capacity) {
+          min_capacity = edge.capacity;
+        }
+
+        head = tail;
+
+        // if we have nowhere else to go, we're done
+        if (null === head.pre) {
+          done = true;
+        }
+      }
+
+      // if the head of the path is not our source node, not an augmenting path
+      if (g.source !== head) {
+        return 0;
+      }
+
+      g.flow_path.map(function (edge_with_flow) {
+        edge_with_flow.addFlow(min_capacity);
+      });
+      g.max_flow += min_capacity;
+
+      g.flow_path.reverse();
+
+      return min_capacity;
     }
   }, {
     key: 'size',
@@ -26706,6 +26859,7 @@ var Vertex = function () {
     this.id = id;
     this.visited = false;
     this.pre = null;
+    this.fat = 0;
   }
 
   _createClass(Vertex, [{

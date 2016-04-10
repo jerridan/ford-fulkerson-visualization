@@ -481,7 +481,9 @@ function edmondsKarp() {
   d3.select('#reset-flow-btn')
     .attr('disabled', 'disabled');
 
-  let augmenting_paths = [];
+  let saved_info = {};
+  saved_info.flow_increases = [];
+  saved_info.augmenting_paths = [];
   let flow_increase = 0;
 
   let interval_id = setInterval(function () {
@@ -494,8 +496,8 @@ function edmondsKarp() {
 
     // use breadth first search to get flow increase
     try {
-      flow_increase = graph.bfs();
-    } catch(err) {
+      flow_increase = graph.fattestPath();
+    } catch (err) {
       flow_increase = 0;
     }
 
@@ -510,7 +512,8 @@ function edmondsKarp() {
     });
 
     // clone flow path and save result
-    augmenting_paths.push(_.map(graph.flow_path, _.clone));
+    saved_info.augmenting_paths.push(_.map(graph.flow_path, _.clone));
+    saved_info.flow_increases.push(flow_increase);
 
     graph.flow_path = [];
 
@@ -523,10 +526,10 @@ function edmondsKarp() {
       graph.flow_path = [];
 
       // display number of iterations it took to find flow
-      d3.select('#number-iterations').text(augmenting_paths.length - 1);
+      d3.select('#number-iterations').text(saved_info.augmenting_paths.length - 1);
 
-      // display augmenting paths
-      displayAugmentingPaths(augmenting_paths);
+      // display saved info
+      displaySavedInfo(saved_info);
 
       // enable buttons again
       d3.select('#calc-max-flow-btn')
@@ -534,8 +537,9 @@ function edmondsKarp() {
       d3.select('#reset-flow-btn')
         .attr('disabled', null);
 
-      _.flatten(augmenting_paths).map(function (edge) {
+      _.flatten(saved_info.augmenting_paths).map(function (edge) {
         d3.select('#link_id_' + edge.id)
+          .classed('augmented', false)
           .classed('has-flow', true);
       });
       restart();
@@ -543,19 +547,21 @@ function edmondsKarp() {
   }, 1000);
 }
 
-function displayAugmentingPaths(augmenting_paths) {
+function displaySavedInfo(saved_info) {
+
   let augmenting_paths_text = "<div class='info'>Augmenting Paths:</div><ul>";
 
-  augmenting_paths.map(function (path, index) {
-    if (index === augmenting_paths.length - 1) {
+  saved_info.augmenting_paths.map(function (path, index) {
+    if (index === saved_info.augmenting_paths.length - 1) {
       return;
     }
     augmenting_paths_text += ("<li>Path " + (index + 1));
+    augmenting_paths_text += ("<ul>Flow Increase: " + saved_info.flow_increases[index] + "</ul>");
     path.map(function (edge) {
       augmenting_paths_text += ("<ul>");
       augmenting_paths_text += ("<li>Source: " + edge.source.id + "</li>");
       augmenting_paths_text += ("<li>Target: " + edge.target.id + "</li>");
-      augmenting_paths_text += ("<li>Flow: " + edge.flow + "</li>");
+      augmenting_paths_text += ("<li>Total Flow: " + edge.flow + "</li>");
       augmenting_paths_text += ("<li>Remaining capacity: " + edge.capacity + "</li>");
       augmenting_paths_text += "</ul>";
     });
