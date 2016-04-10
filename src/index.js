@@ -9,7 +9,7 @@ import sample_graph from './lib/sample_graph';
 
 // set up SVG for D3
 let width = 960,
-  height = 500,
+  height = 700,
   colors = d3.scale.category10();
 
 var svg = d3.select('#graph')
@@ -55,7 +55,6 @@ let drag = d3.behavior.drag()
   })
   .on('drag', function (d) {
     if (shift_mode) {
-      //console.log('dragging');
       let position = d3.mouse(this);
       d.x += position[0];
       d.y += position[1];
@@ -475,7 +474,14 @@ function calcMaxFlow() {
 function edmondsKarp() {
   resetFlowAmounts();
 
-  let all_flow_paths = [];
+  // disable buttons during calculation
+  d3.select('#calc-max-flow-btn')
+    .attr('disabled', 'disabled');
+  d3.select('#reset-flow-btn')
+    .attr('disabled', 'disabled');
+
+  let augmenting_paths = [];
+  let flow_increase = 0;
 
   let interval_id = setInterval(function () {
 
@@ -486,7 +492,11 @@ function edmondsKarp() {
     });
 
     // use breadth first search to get flow increase
-    let flow_increase = graph.bfs();
+    try {
+      flow_increase = graph.bfs();
+    } catch(err) {
+      flow_increase = 0;
+    }
 
     // highlight augmented path
     graph.flow_path.map(function (edge) {
@@ -498,23 +508,61 @@ function edmondsKarp() {
         .classed('augmented', true);
     });
 
-    all_flow_paths.push(graph.flow_path);
+    // clone flow path and save result
+    augmenting_paths.push(_.map(graph.flow_path, _.clone));
+
     graph.flow_path = [];
+
+    // display new max flow amount
+    d3.select('#max-flow-amount').text(graph.max_flow);
 
     // if no further augmenting paths, stop searching
     if (flow_increase === 0) {
       clearInterval(interval_id);
       graph.flow_path = [];
 
-      //all_flow_paths = _.flatten(all_flow_paths);
-      _.flatten(all_flow_paths).map(function (edge) {
+      // display number of iterations it took to find flow
+      d3.select('#number-iterations').text(augmenting_paths.length - 1);
+
+      // display augmenting paths
+      displayAugmentingPaths(augmenting_paths);
+
+      // enable buttons again
+      d3.select('#calc-max-flow-btn')
+        .attr('disabled', null);
+      d3.select('#reset-flow-btn')
+        .attr('disabled', null);
+
+      _.flatten(augmenting_paths).map(function (edge) {
         d3.select('#link_id_' + edge.id)
           .classed('has-flow', true);
       });
-      console.log('max flow:', graph.max_flow);
       restart();
     }
   }, 1000);
+}
+
+function displayAugmentingPaths(augmenting_paths) {
+  let augmenting_paths_text = "<div class='info'>Augmenting Paths:</div><ul>";
+
+  augmenting_paths.map(function (path, index) {
+    if (index === augmenting_paths.length - 1) {
+      return;
+    }
+    augmenting_paths_text += ("<li>Path " + (index + 1));
+    path.map(function (edge) {
+      augmenting_paths_text += ("<ul>");
+      augmenting_paths_text += ("<li>Source: " + edge.source.id + "</li>");
+      augmenting_paths_text += ("<li>Target: " + edge.target.id + "</li>");
+      augmenting_paths_text += ("<li>Flow: " + edge.flow + "</li>");
+      augmenting_paths_text += ("<li>Remaining capacity: " + edge.capacity + "</li>");
+      augmenting_paths_text += "</ul>";
+    });
+    augmenting_paths_text += "</li>"
+  });
+  augmenting_paths_text += "</ul>";
+
+  d3.select('#augmenting-paths').html(augmenting_paths_text);
 }
 
 function resetFlowAmounts() {
@@ -528,6 +576,35 @@ function resetFlowAmounts() {
     d3.select('#link_id_' + edge.id)
       .classed('has-flow', false);
   });
+  d3.select('#max-flow-amount').text('0');
+  d3.select('#number-iterations').text('0');
+  d3.select('#augmenting-paths').text('');
+}
+
+function eraseGraph() {
+  graph = new Graph();
+  next_vertex_id = 0;
+
+  nodes = graph.vertices;
+  links = graph.edges;
+
+  // Source and target of each link must reference node array
+  links.map(function (link) {
+    link.source = nodes[link.source.id];
+    link.target = nodes[link.target.id];
+  });
+
+  force.stop();
+  force = d3.layout.force()
+    .nodes(nodes)
+    .links(links)
+    .size([width, height])
+    .linkDistance(250)
+    .charge(-500)
+    .on('tick', tick);
+  force.start();
+
+  restart();
 }
 
 // mouse event handlers
@@ -541,6 +618,8 @@ d3.select(window)
   .on('keyup', keyup);
 
 // Button causes maximum flow to be calculated
-d3.select('#calcMaxFlow').on('click', calcMaxFlow);
+d3.select('#calc-max-flow-btn').on('click', calcMaxFlow);
+d3.select('#reset-flow-btn').on('click', resetFlowAmounts);
+d3.select('#erase-graph-btn').on('click', eraseGraph);
 
 restart();

@@ -4,6 +4,21 @@ html
     meta(charset='utf8')
     link(rel='stylesheet' type='text/css' href='css/style.css')
   body
-    button(id='calcMaxFlow') Get max flow
-    div(id='graph')
+    div.container
+      div.title Maximum Flow Visual
+      div.main-button-container
+        button.material-regular-button(id='calc-max-flow-btn') Get max flow
+        button.material-regular-button(id='reset-flow-btn') Reset flow
+        button.material-regular-button(id='erase-graph-btn') Erase
+      div.display
+        div(id='graph')
+        div(id='info-panel')
+          div.info
+            span Maximum Flow: &nbsp;
+            span(id='max-flow-amount') 0
+          div.info
+            span # Augmenting Paths: &nbsp;
+            span(id='number-iterations') 0
+          div
+            div(id='augmenting-paths')
     script(type='text/javascript' src='dist/index.js')

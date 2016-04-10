@@ -1,68 +1,57 @@
+@import './normalize';
+@import './material-design';
 @import './context-menu';
+@import './graph';
 
-svg {
-  background-color: #FFF;
-  cursor: default;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  -o-user-select: none;
-  user-select: none;
+.container {
+  margin: 0 auto;
+  width: 1200px;
 }
 
-svg:not(.active):not(.ctrl) {
-  cursor: crosshair;
+.title {
+  font-size: 28px;
+  text-align: center;
 }
 
-path.link {
-  fill: none;
-  stroke: #000;
-  stroke-width: 4px;
-  cursor: default;
-  &.augmented {
-    stroke: #33cc99;
+.main-button-container {
+  text-align: center;
+}
+
+#calc-max-flow-btn, #reset-flow-btn, #erase-graph-btn {
+  margin: 10px 10px 10px 0;
+  width: 115px;
+}
+
+.display {
+  border: 2px solid grey;
+  height: 704px;
+  #graph, #info-panel {
+    display: inline-block;
+    vertical-align: top;
   }
-  &.has-flow {
-    stroke: #3399cc;
+  #graph {
+    width: 960px;
+    border-right: 2px solid grey;
+    display: inline-block;
   }
-}
-
-.link-arrow {
-  fill: #000;
-}
-
-svg:not(.active):not(.ctrl) path.link {
-  cursor: pointer;
-}
-
-path.link.selected {
-  stroke-dasharray: 10, 2;
-}
-
-path.link.dragline {
-  pointer-events: none;
-}
-
-path.link.hidden {
-  stroke-width: 0;
-}
-
-circle.node {
-  stroke-width: 1.5px;
-  cursor: pointer;
-}
-
-circle.node.reflexive {
-  stroke: #000 !important;
-  stroke-width: 2.5px;
-}
-
-text {
-  font: 12px sans-serif;
-  pointer-events: none;
-}
-
-text.id {
-  text-anchor: middle;
-  font-weight: bold;
+  #info-panel {
+    width: 220px;
+    padding: 5px;
+    .info {
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    #augmenting-paths {
+      & > ul {
+        height: 610px;
+        overflow-y: auto;
+        margin-top: 10px;
+      }
+      ul {
+        font-size: 14px;
+        list-style: none;
+        padding: 0 10px 10px 10px;
+      }
+    }
+  }
 }

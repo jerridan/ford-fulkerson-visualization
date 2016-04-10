@@ -25721,7 +25721,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 // set up SVG for D3
 var width = 960,
-    height = 500,
+    height = 700,
     colors = _d2.default.scale.category10();
 
 var svg = _d2.default.select('#graph').append('svg').attr('oncontextmenu', 'return false;').attr('width', width).attr('height', height);
@@ -25754,7 +25754,6 @@ var drag = _d2.default.behavior.drag().origin(function (d) {
   }
 }).on('drag', function (d) {
   if (shift_mode) {
-    //console.log('dragging');
     var position = _d2.default.mouse(this);
     d.x += position[0];
     d.y += position[1];
@@ -26096,7 +26095,12 @@ function calcMaxFlow() {
 function edmondsKarp() {
   resetFlowAmounts();
 
-  var all_flow_paths = [];
+  // disable buttons during calculation
+  _d2.default.select('#calc-max-flow-btn').attr('disabled', 'disabled');
+  _d2.default.select('#reset-flow-btn').attr('disabled', 'disabled');
+
+  var augmenting_paths = [];
+  var flow_increase = 0;
 
   var interval_id = setInterval(function () {
 
@@ -26106,7 +26110,11 @@ function edmondsKarp() {
     });
 
     // use breadth first search to get flow increase
-    var flow_increase = graph.bfs();
+    try {
+      flow_increase = graph.bfs();
+    } catch (err) {
+      flow_increase = 0;
+    }
 
     // highlight augmented path
     graph.flow_path.map(function (edge) {
@@ -26115,22 +26123,58 @@ function edmondsKarp() {
       _d2.default.select('#link_id_' + edge.id).classed('augmented', true);
     });
 
-    all_flow_paths.push(graph.flow_path);
+    // clone flow path and save result
+    augmenting_paths.push(_.map(graph.flow_path, _.clone));
+
     graph.flow_path = [];
+
+    // display new max flow amount
+    _d2.default.select('#max-flow-amount').text(graph.max_flow);
 
     // if no further augmenting paths, stop searching
     if (flow_increase === 0) {
       clearInterval(interval_id);
       graph.flow_path = [];
 
-      //all_flow_paths = _.flatten(all_flow_paths);
-      _.flatten(all_flow_paths).map(function (edge) {
+      // display number of iterations it took to find flow
+      _d2.default.select('#number-iterations').text(augmenting_paths.length - 1);
+
+      // display augmenting paths
+      displayAugmentingPaths(augmenting_paths);
+
+      // enable buttons again
+      _d2.default.select('#calc-max-flow-btn').attr('disabled', null);
+      _d2.default.select('#reset-flow-btn').attr('disabled', null);
+
+      _.flatten(augmenting_paths).map(function (edge) {
         _d2.default.select('#link_id_' + edge.id).classed('has-flow', true);
       });
-      console.log('max flow:', graph.max_flow);
       restart();
     }
   }, 1000);
+}
+
+function displayAugmentingPaths(augmenting_paths) {
+  var augmenting_paths_text = "<div class='info'>Augmenting Paths:</div><ul>";
+
+  augmenting_paths.map(function (path, index) {
+    if (index === augmenting_paths.length - 1) {
+      return;
+    }
+    augmenting_paths_text += "<li>Path " + (index + 1);
+    path.map(function (edge) {
+      augmenting_paths_text += "<ul>";
+      augmenting_paths_text += "<li>Source: " + edge.source.id + "</li>";
+      augmenting_paths_text += "<li>Target: " + edge.target.id + "</li>";
+      augmenting_paths_text += "<li>Flow: " + edge.flow + "</li>";
+      augmenting_paths_text += "<li>Remaining capacity: " + edge.capacity + "</li>";
+      augmenting_paths_text += "</ul>";
+    });
+    augmenting_paths_text += "</li>";
+  });
+  augmenting_paths_text += "</ul>";
+
+  _d2.default.select('#augmenting-paths').html(augmenting_paths_text);
 }
 
 function resetFlowAmounts() {
@@ -26141,6 +26185,29 @@ function resetFlowAmounts() {
     _d2.default.select('.flow_' + edge.id).text(edge.flow);
     _d2.default.select('#link_id_' + edge.id).classed('has-flow', false);
   });
+  _d2.default.select('#max-flow-amount').text('0');
+  _d2.default.select('#number-iterations').text('0');
+  _d2.default.select('#augmenting-paths').text('');
+}
+
+function eraseGraph() {
+  graph = new _graph2.default();
+  next_vertex_id = 0;
+
+  nodes = graph.vertices;
+  links = graph.edges;
+
+  // Source and target of each link must reference node array
+  links.map(function (link) {
+    link.source = nodes[link.source.id];
+    link.target = nodes[link.target.id];
+  });
+
+  force.stop();
+  force = _d2.default.layout.force().nodes(nodes).links(links).size([width, height]).linkDistance(250).charge(-500).on('tick', tick);
+  force.start();
+
+  restart();
 }
 
 // mouse event handlers
@@ -26152,7 +26219,9 @@ svg.on('mouseup', hideDragLine);
 _d2.default.select(window).on('keydown', keydown).on('keyup', keyup);
 
 // Button causes maximum flow to be calculated
-_d2.default.select('#calcMaxFlow').on('click', calcMaxFlow);
+_d2.default.select('#calc-max-flow-btn').on('click', calcMaxFlow);
+_d2.default.select('#reset-flow-btn').on('click', resetFlowAmounts);
+_d2.default.select('#erase-graph-btn').on('click', eraseGraph);
 
 restart();
 
