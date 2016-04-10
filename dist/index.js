@@ -25719,6 +25719,9 @@ var _sample_graph2 = _interopRequireDefault(_sample_graph);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+// algorithm can be: EK, DFS, FP
+var chosen_algorithm = 'EK';
+
 // set up SVG for D3
 var width = 960,
     height = 700,
@@ -26112,9 +26115,16 @@ function edmondsKarp() {
       _d2.default.select('#link_id_' + edge.id).classed('augmented', false);
     });
 
-    // use breadth first search to get flow increase
+    // use chosen algorithm to get flow increase
+    // along augmenting path
     try {
-      flow_increase = graph.fattestPath();
+      if ('EK' === chosen_algorithm) {
+        flow_increase = graph.bfs();
+      } else if ('DFS' === chosen_algorithm) {
+        flow_increase = graph.dfs();
+      } else {
+        flow_increase = graph.fattestPath();
+      }
     } catch (err) {
       flow_increase = 0;
     }
@@ -26216,6 +26226,36 @@ function eraseGraph() {
   restart();
 }
 
+function setEdmondsKarp() {
+  chosen_algorithm = 'EK';
+
+  _d2.default.select('#edmonds-karp-select').classed('checked', true);
+
+  _d2.default.select('#dfs-select').classed('checked', false);
+
+  _d2.default.select('#fattest-path-select').classed('checked', false);
+}
+
+function setDFS() {
+  chosen_algorithm = 'DFS';
+
+  _d2.default.select('#edmonds-karp-select').classed('checked', false);
+
+  _d2.default.select('#dfs-select').classed('checked', true);
+
+  _d2.default.select('#fattest-path-select').classed('checked', false);
+}
+
+function setFattestPath() {
+  chosen_algorithm = 'FP';
+
+  _d2.default.select('#edmonds-karp-select').classed('checked', false);
+
+  _d2.default.select('#dfs-select').classed('checked', false);
+
+  _d2.default.select('#fattest-path-select').classed('checked', true);
+}
+
 // mouse event handlers
 svg.on('mousedown', addNewNode);
 svg.on('mousemove', updateDragLine);
@@ -26224,10 +26264,14 @@ svg.on('mouseup', hideDragLine);
 // keyboard event handlers
 _d2.default.select(window).on('keydown', keydown).on('keyup', keyup);
 
-// Button causes maximum flow to be calculated
 _d2.default.select('#calc-max-flow-btn').on('click', calcMaxFlow);
 _d2.default.select('#reset-flow-btn').on('click', resetFlowAmounts);
 _d2.default.select('#erase-graph-btn').on('click', eraseGraph);
+//d3.select('.algorithms').selectAll('.radio').on('click', setAlgorithm());
+
+_d2.default.select('#edmonds-karp-select').on('click', setEdmondsKarp).classed('checked', true);
+_d2.default.select('#dfs-select').on('click', setDFS);
+_d2.default.select('#fattest-path-select').on('click', setFattestPath);
 
 restart();
 

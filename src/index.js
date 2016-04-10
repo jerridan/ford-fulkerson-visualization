@@ -7,6 +7,9 @@ import Graph from './lib/graph';
 
 import sample_graph from './lib/sample_graph';
 
+// algorithm can be: EK, DFS, FP
+let chosen_algorithm = 'EK';
+
 // set up SVG for D3
 let width = 960,
   height = 700,
@@ -494,9 +497,16 @@ function edmondsKarp() {
         .classed('augmented', false);
     });
 
-    // use breadth first search to get flow increase
+    // use chosen algorithm to get flow increase
+    // along augmenting path
     try {
-      flow_increase = graph.fattestPath();
+      if ('EK' === chosen_algorithm) {
+        flow_increase = graph.bfs();
+      } else if ('DFS' === chosen_algorithm) {
+        flow_increase = graph.dfs();
+      } else {
+        flow_increase = graph.fattestPath();
+      }
     } catch (err) {
       flow_increase = 0;
     }
@@ -614,6 +624,45 @@ function eraseGraph() {
   restart();
 }
 
+function setEdmondsKarp() {
+  chosen_algorithm = 'EK';
+
+  d3.select('#edmonds-karp-select')
+    .classed('checked', true);
+
+  d3.select('#dfs-select')
+    .classed('checked', false);
+
+  d3.select('#fattest-path-select')
+    .classed('checked', false);
+}
+
+function setDFS() {
+  chosen_algorithm = 'DFS';
+
+  d3.select('#edmonds-karp-select')
+    .classed('checked', false);
+
+  d3.select('#dfs-select')
+    .classed('checked', true);
+
+  d3.select('#fattest-path-select')
+    .classed('checked', false);
+}
+
+function setFattestPath() {
+  chosen_algorithm = 'FP';
+
+  d3.select('#edmonds-karp-select')
+    .classed('checked', false);
+
+  d3.select('#dfs-select')
+    .classed('checked', false);
+
+  d3.select('#fattest-path-select')
+    .classed('checked', true);
+}
+
 // mouse event handlers
 svg.on('mousedown', addNewNode);
 svg.on('mousemove', updateDragLine);
@@ -624,9 +673,15 @@ d3.select(window)
   .on('keydown', keydown)
   .on('keyup', keyup);
 
-// Button causes maximum flow to be calculated
 d3.select('#calc-max-flow-btn').on('click', calcMaxFlow);
 d3.select('#reset-flow-btn').on('click', resetFlowAmounts);
 d3.select('#erase-graph-btn').on('click', eraseGraph);
+//d3.select('.algorithms').selectAll('.radio').on('click', setAlgorithm());
+
+d3.select('#edmonds-karp-select')
+  .on('click', setEdmondsKarp)
+  .classed('checked', true);
+d3.select('#dfs-select').on('click', setDFS);
+d3.select('#fattest-path-select').on('click', setFattestPath);
 
 restart();
