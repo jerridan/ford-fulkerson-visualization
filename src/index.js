@@ -42,6 +42,7 @@ let force = d3.layout.force()
   .charge(-500)
   .on('tick', tick);
 
+// drag behavior for moving vertices around
 let drag = d3.behavior.drag()
   .origin(function (d) {
     return d;
@@ -73,18 +74,19 @@ let drag = d3.behavior.drag()
 // define arrow markers for graph links
 svg.append('svg:defs').append('svg:marker')
   .attr('id', 'end-arrow')
+  .attr('class', 'link-arrow')
   .attr('viewBox', '0 -5 10 10')
   .attr('refX', 11)
   .attr('markerWidth', 3)
   .attr('markerHeight', 3)
   .attr('orient', 'auto')
   .append('svg:path')
-  .attr('d', 'M0,-5L10,0L0,5')
-  .attr('fill', '#000');
+  .attr('d', 'M0,-5L10,0L0,5');
 
 // define arrow markers for graph links
 svg.append('svg:defs').append('svg:marker')
   .attr('id', 'arc-end-arrow')
+  .attr('class', 'link-arrow')
   .attr('viewBox', '0 -5 10 10')
   .attr('refX', 25)
   .attr('refY', -1)
@@ -92,8 +94,7 @@ svg.append('svg:defs').append('svg:marker')
   .attr('markerHeight', 3)
   .attr('orient', 'auto')
   .append('svg:path')
-  .attr('d', 'M0,-5L10,0L0,5')
-  .attr('fill', '#000');
+  .attr('d', 'M0,-5L10,0L0,5');
 
 // Show a draggable line when user is adding a new edge
 let drag_line = svg.append('svg:path')
@@ -453,6 +454,12 @@ function keyup() {
 
 // updates the capacity of an edge
 function updateCapacityVal(i) {
+  if (graph.max_flow > 0) {
+    graph.max_flow = 0;
+    graph.edges.map(function (e) {
+      e.resetFlow();
+    });
+  }
   if (selected_link) {
     entered_capacity_val += i;
     d3.select('.capacity_' + selected_link.id).text(entered_capacity_val);
@@ -462,12 +469,64 @@ function updateCapacityVal(i) {
 }
 
 function calcMaxFlow() {
-  graph.edmondsKarp();
-  console.log(graph.max_flow);
+  edmondsKarp();
+}
 
-  // edge capacities must be reset, or will be increased by updateCapacityVal
-  graph.edges.map(function (e) {
-    e.resetFlow();
+function edmondsKarp() {
+  resetFlowAmounts();
+
+  let all_flow_paths = [];
+
+  let interval_id = setInterval(function () {
+
+    // unhighlight augmented path
+    graph.edges.map(function (edge) {
+      d3.select('#link_id_' + edge.id)
+        .classed('augmented', false);
+    });
+
+    // use breadth first search to get flow increase
+    let flow_increase = graph.bfs();
+
+    // highlight augmented path
+    graph.flow_path.map(function (edge) {
+      d3.select('.capacity_' + edge.id)
+        .text(edge.capacity);
+      d3.select('.flow_' + edge.id)
+        .text(edge.flow);
+      d3.select('#link_id_' + edge.id)
+        .classed('augmented', true);
+    });
+
+    all_flow_paths.push(graph.flow_path);
+    graph.flow_path = [];
+
+    // if no further augmenting paths, stop searching
+    if (flow_increase === 0) {
+      clearInterval(interval_id);
+      graph.flow_path = [];
+
+      //all_flow_paths = _.flatten(all_flow_paths);
+      _.flatten(all_flow_paths).map(function (edge) {
+        d3.select('#link_id_' + edge.id)
+          .classed('has-flow', true);
+      });
+      console.log('max flow:', graph.max_flow);
+      restart();
+    }
+  }, 1000);
+}
+
+function resetFlowAmounts() {
+  graph.max_flow = 0;
+  graph.edges.map(function (edge) {
+    edge.resetFlow();
+    d3.select('.capacity_' + edge.id)
+      .text(edge.capacity);
+    d3.select('.flow_' + edge.id)
+      .text(edge.flow);
+    d3.select('#link_id_' + edge.id)
+      .classed('has-flow', false);
   });
 }
 

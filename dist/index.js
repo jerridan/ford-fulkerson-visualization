@@ -25744,6 +25744,7 @@ links.map(function (link) {
 // init D3 force layout
 var force = _d2.default.layout.force().nodes(nodes).links(links).size([width, height]).linkDistance(250).charge(-500).on('tick', tick);
 
+// drag behavior for moving vertices around
 var drag = _d2.default.behavior.drag().origin(function (d) {
   return d;
 }).on('dragstart', function (d) {
@@ -25769,10 +25770,10 @@ var drag = _d2.default.behavior.drag().origin(function (d) {
 });
 
 // define arrow markers for graph links
-svg.append('svg:defs').append('svg:marker').attr('id', 'end-arrow').attr('viewBox', '0 -5 10 10').attr('refX', 11).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#000');
+svg.append('svg:defs').append('svg:marker').attr('id', 'end-arrow').attr('class', 'link-arrow').attr('viewBox', '0 -5 10 10').attr('refX', 11).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M0,-5L10,0L0,5');
 
 // define arrow markers for graph links
-svg.append('svg:defs').append('svg:marker').attr('id', 'arc-end-arrow').attr('viewBox', '0 -5 10 10').attr('refX', 25).attr('refY', -1).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#000');
+svg.append('svg:defs').append('svg:marker').attr('id', 'arc-end-arrow').attr('class', 'link-arrow').attr('viewBox', '0 -5 10 10').attr('refX', 25).attr('refY', -1).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M0,-5L10,0L0,5');
 
 // Show a draggable line when user is adding a new edge
 var drag_line = svg.append('svg:path').attr('class', 'link dragline').style('display', 'none').attr('d', 'M0,0L0,0');
@@ -26074,6 +26075,12 @@ function keyup() {
 
 // updates the capacity of an edge
 function updateCapacityVal(i) {
+  if (graph.max_flow > 0) {
+    graph.max_flow = 0;
+    graph.edges.map(function (e) {
+      e.resetFlow();
+    });
+  }
   if (selected_link) {
     entered_capacity_val += i;
     _d2.default.select('.capacity_' + selected_link.id).text(entered_capacity_val);
@@ -26083,12 +26090,56 @@ function updateCapacityVal(i) {
 }
 
 function calcMaxFlow() {
-  graph.edmondsKarp();
-  console.log(graph.max_flow);
+  edmondsKarp();
+}
 
-  // edge capacities must be reset, or will be increased by updateCapacityVal
-  graph.edges.map(function (e) {
-    e.resetFlow();
+function edmondsKarp() {
+  resetFlowAmounts();
+
+  var all_flow_paths = [];
+
+  var interval_id = setInterval(function () {
+
+    // unhighlight augmented path
+    graph.edges.map(function (edge) {
+      _d2.default.select('#link_id_' + edge.id).classed('augmented', false);
+    });
+
+    // use breadth first search to get flow increase
+    var flow_increase = graph.bfs();
+
+    // highlight augmented path
+    graph.flow_path.map(function (edge) {
+      _d2.default.select('.capacity_' + edge.id).text(edge.capacity);
+      _d2.default.select('.flow_' + edge.id).text(edge.flow);
+      _d2.default.select('#link_id_' + edge.id).classed('augmented', true);
+    });
+
+    all_flow_paths.push(graph.flow_path);
+    graph.flow_path = [];
+
+    // if no further augmenting paths, stop searching
+    if (flow_increase === 0) {
+      clearInterval(interval_id);
+      graph.flow_path = [];
+
+      //all_flow_paths = _.flatten(all_flow_paths);
+      _.flatten(all_flow_paths).map(function (edge) {
+        _d2.default.select('#link_id_' + edge.id).classed('has-flow', true);
+      });
+      console.log('max flow:', graph.max_flow);
+      restart();
+    }
+  }, 1000);
+}
+
+function resetFlowAmounts() {
+  graph.max_flow = 0;
+  graph.edges.map(function (edge) {
+    edge.resetFlow();
+    _d2.default.select('.capacity_' + edge.id).text(edge.capacity);
+    _d2.default.select('.flow_' + edge.id).text(edge.flow);
+    _d2.default.select('#link_id_' + edge.id).classed('has-flow', false);
   });
 }
 
@@ -26191,8 +26242,6 @@ var Edge = function () {
     this.flow = 0;
     this.in_flow_path = false;
     this.has_evil_twin = false;
-    this.archedLeft = false;
-    this.archedRight = false;
   }
 
   _createClass(Edge, [{
@@ -26533,34 +26582,40 @@ var v3 = new _vertex2.default(3);
 var v4 = new _vertex2.default(4);
 var v5 = new _vertex2.default(5);
 
-//let e01 = new Edge(v0, v1, 8);
-//let e02 = new Edge(v0, v2, 5);
-//let e12 = new Edge(v1, v2, 5);
-//let e13 = new Edge(v1, v3, 5);
-//let e24 = new Edge(v2, v4, 8);
-//let e34 = new Edge(v3, v4, 5);
-//let e35 = new Edge(v3, v5, 11);
-//let e43 = new Edge(v4, v3, 3);
-//let e45 = new Edge(v4, v5, 2);
-
-//sample_graph.addEdge(e01);
-//sample_graph.addEdge(e02);
-//sample_graph.addEdge(e12);
-//sample_graph.addEdge(e13);
-//sample_graph.addEdge(e24);
-//sample_graph.addEdge(e34);
-//sample_graph.addEdge(e35);
-//sample_graph.addEdge(e43);
-//sample_graph.addEdge(e45);
-
-//sample_graph.setSource(v0);
-//sample_graph.setSink(v5);
+// SAMPLE GRAPH 1
 
 var e01 = new _edge2.default(v0, v1, 8);
-var e10 = new _edge2.default(v1, v0, 5);
+var e02 = new _edge2.default(v0, v2, 5);
+var e12 = new _edge2.default(v1, v2, 5);
+var e13 = new _edge2.default(v1, v3, 5);
+var e24 = new _edge2.default(v2, v4, 8);
+var e34 = new _edge2.default(v3, v4, 5);
+var e35 = new _edge2.default(v3, v5, 11);
+var e43 = new _edge2.default(v4, v3, 3);
+var e45 = new _edge2.default(v4, v5, 2);
 
 sample_graph.addEdge(e01);
-sample_graph.addEdge(e10);
+sample_graph.addEdge(e02);
+sample_graph.addEdge(e12);
+sample_graph.addEdge(e13);
+sample_graph.addEdge(e24);
+sample_graph.addEdge(e34);
+sample_graph.addEdge(e35);
+sample_graph.addEdge(e43);
+sample_graph.addEdge(e45);
+
+sample_graph.setSource(v0);
+sample_graph.setSink(v5);
+
+// SAMPLE GRAPH 2
+//let e01 = new Edge(v0, v1, 8);
+//let e10 = new Edge(v1, v0, 5);
+//
+//sample_graph.addEdge(e01);
+//sample_graph.addEdge(e10);
+//
+//sample_graph.setSource(v0);
+//sample_graph.setSink(v1);
 
 exports.default = sample_graph;
 

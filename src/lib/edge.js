@@ -18,8 +18,6 @@ class Edge {
     this.flow = 0;
     this.in_flow_path = false;
     this.has_evil_twin = false;
-    this.archedLeft = false;
-    this.archedRight = false;
   }
 
   toJSON() {

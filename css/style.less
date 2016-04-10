@@ -19,6 +19,16 @@ path.link {
   stroke: #000;
   stroke-width: 4px;
   cursor: default;
+  &.augmented {
+    stroke: #33cc99;
+  }
+  &.has-flow {
+    stroke: #3399cc;
+  }
+}
+
+.link-arrow {
+  fill: #000;
 }
 
 svg:not(.active):not(.ctrl) path.link {
@@ -26,7 +36,7 @@ svg:not(.active):not(.ctrl) path.link {
 }
 
 path.link.selected {
-  stroke-dasharray: 10,2;
+  stroke-dasharray: 10, 2;
 }
 
 path.link.dragline {

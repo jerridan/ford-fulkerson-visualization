@@ -40,11 +40,20 @@ path.link {
   stroke-width: 4px;
   cursor: default;
 }
+path.link.augmented {
+  stroke: #33cc99;
+}
+path.link.has-flow {
+  stroke: #3399cc;
+}
+.link-arrow {
+  fill: #000;
+}
 svg:not(.active):not(.ctrl) path.link {
   cursor: pointer;
 }
 path.link.selected {
-  stroke-dasharray: 10,2;
+  stroke-dasharray: 10, 2;
 }
 path.link.dragline {
   pointer-events: none;
