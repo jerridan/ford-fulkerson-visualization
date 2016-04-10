@@ -121,7 +121,7 @@ function tick() {
       sourceY = d.source.y + (sourcePadding * normY),
       targetX = d.target.x - (targetPadding * normX),
       targetY = d.target.y - (targetPadding * normY);
-    if (d.archedLeft || d.archedRight) {
+    if (d.has_evil_twin) {
       return "M" + d.source.x + "," + d.source.y + "A" + dist + "," + dist + " 0 0, 1 " + d.target.x + "," + d.target.y;
     } else {
       return 'M' + sourceX + ',' + sourceY + 'L' + targetX + ',' + targetY;
@@ -163,7 +163,7 @@ function restart() {
     })
     .style('marker-end', function (d) {
       if (d) {
-        return d.archedLeft || d.archedRight ? 'url(#arc-end-arrow)' : 'url(#end-arrow)';
+        return d.has_evil_twin ? 'url(#arc-end-arrow)' : 'url(#end-arrow)';
       }
     });
 
@@ -174,7 +174,7 @@ function restart() {
       return 'link_id_' + d.id;
     })
     .style('marker-end', function (d) {
-      return d.archedLeft || d.archedRight ? 'url(#arc-end-arrow)' : 'url(#end-arrow)';
+      return d.has_evil_twin ? 'url(#arc-end-arrow)' : 'url(#end-arrow)';
     })
     .classed('selected', function (d) {
       return d === selected_link;
@@ -194,14 +194,19 @@ function restart() {
     return d.id;
   });
 
+  // update capacity text
   d3.selectAll('.capacity-text')
-    .attr("dy", function (d) {
-      return d.archedLeft || d.archedRight ? "-8px" : "-8px";
-    })
+    .attr("dy", "-8px")
     .attr("dx", function (d) {
-      return d.archedLeft || d.archedRight ? "25px" : "10px";
+      return d.has_evil_twin ? "40px" : "25px";
     });
 
+  // update flow text
+  d3.selectAll('.flow-text')
+    .attr("dy", "-8px")
+    .attr("dx", function (d) {
+      return d.has_evil_twin ? "-50px" : "-30px";
+    });
 
   let link_text = path_text.enter()
     .append('g')
@@ -212,11 +217,9 @@ function restart() {
     .append('svg:text')
     .attr('class', 'capacity-text')
     .style('font-size', "12px")
-    .attr("dy", function (d) {
-      return d.archedLeft || d.archedRight ? "-8px" : "-8px";
-    })
+    .attr("dy", "-8px")
     .attr("dx", function (d) {
-      return d.archedLeft || d.archedRight ? "25px" : "10px";
+      return d.has_evil_twin ? "40px" : "25px";
     })
     .append('svg:textPath')
     .attr('xlink:href', function (d) {
@@ -236,18 +239,16 @@ function restart() {
     .append('svg:text')
     .attr('class', 'flow-text')
     .style('font-size', "12px")
-    .attr("dy", function (d) {
-      return d.archedLeft ? "-8px" : "-8px";
-    })
+    .attr("dy", "-8px")
     .attr("dx", function (d) {
-      return d.archedLeft ? "12px" : "18px";
+      return d.has_evil_twin ? "-50px" : "-30px";
     })
     .append('svg:textPath')
     .attr('xlink:href', function (d) {
       return '#link_id_' + d.id;
     })
     .style("text-anchor", "start")
-    .attr('startOffset', '80%')
+    .attr('startOffset', '100%')
     .attr("class", function (d) {
       return "flow_" + d.id;
     })

@@ -41,7 +41,7 @@ describe('edge', function () {
       let edge = new Edge();
       edge.capacity = 10;
       edge.addFlow(10);
-      expect(edge.inFlowPath).to.be.true;
+      expect(edge.in_flow_path).to.be.true;
     });
   });
   describe('#resetFlow', function () {
@@ -51,11 +51,11 @@ describe('edge', function () {
       edge.addFlow(10);
       expect(edge.flow).to.eql(10);
       expect(edge.capacity).to.eql(0);
-      expect(edge.inFlowPath).to.be.true;
+      expect(edge.in_flow_path).to.be.true;
       edge.resetFlow();
       expect(edge.flow).to.eql(0);
       expect(edge.capacity).to.eql(10);
-      expect(edge.inFlowPath).to.be.false;
+      expect(edge.in_flow_path).to.be.false;
     });
   });
   describe('#toJSON', function () {

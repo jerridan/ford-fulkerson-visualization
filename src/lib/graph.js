@@ -77,14 +77,14 @@ class Graph {
     });
 
     if (-1 === clone_index) {
-      // if there is another node going in the opposite direction, edges will need to be arched in display
+      // if there is another node going in the opposite direction, edges will be evil twins
       let evil_twin_index = _.findIndex(this.edges, function (e) {
         return e.source.id === edge.target.id && e.target.id === edge.source.id;
       });
 
       if (-1 !== evil_twin_index) {
-        this.edges[evil_twin_index].archedLeft = true;
-        edge.archedRight = true;
+        this.edges[evil_twin_index].has_evil_twin = true;
+        edge.has_evil_twin = true;
       }
       this.edges.push(edge);
       this.addVertex(edge.source);
@@ -93,16 +93,14 @@ class Graph {
   }
 
   removeEdge(edge) {
-    // if the edge is arched, remove it and its evil twin's arches
-    if (edge.archedLeft || edge.archedRight) {
-      edge.archedLeft = false;
-      edge.archedRight = false;
+    // if the edge is an evil twin, make it no longer so...
+    if (edge.has_evil_twin) {
+      edge.has_evil_twin = false;
       let evil_twin_index = _.findIndex(this.edges, function (e) {
         return e.source.id === edge.target.id && e.target.id === edge.source.id;
       });
       if(-1 !== evil_twin_index) {
-        this.edges[evil_twin_index].archedLeft = false;
-        this.edges[evil_twin_index].archedRight = false;
+        this.edges[evil_twin_index].has_evil_twin = false;
       }
     }
     _.remove(this.edges, function (e) {

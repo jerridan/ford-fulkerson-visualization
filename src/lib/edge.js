@@ -16,7 +16,8 @@ class Edge {
     }
     this.id = uuid.v4();
     this.flow = 0;
-    this.inFlowPath = false;
+    this.in_flow_path = false;
+    this.has_evil_twin = false;
     this.archedLeft = false;
     this.archedRight = false;
   }
@@ -37,13 +38,13 @@ class Edge {
     }
     this.capacity -= flow;
     this.flow += flow;
-    this.inFlowPath = true;
+    this.in_flow_path = true;
   }
 
   resetFlow() {
     this.capacity += this.flow;
     this.flow = 0;
-    this.inFlowPath = false;
+    this.in_flow_path = false;
   }
 }
 

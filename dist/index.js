@@ -25797,7 +25797,7 @@ function tick() {
         sourceY = d.source.y + sourcePadding * normY,
         targetX = d.target.x - targetPadding * normX,
         targetY = d.target.y - targetPadding * normY;
-    if (d.archedLeft || d.archedRight) {
+    if (d.has_evil_twin) {
       return "M" + d.source.x + "," + d.source.y + "A" + dist + "," + dist + " 0 0, 1 " + d.target.x + "," + d.target.y;
     } else {
       return 'M' + sourceX + ',' + sourceY + 'L' + targetX + ',' + targetY;
@@ -25837,7 +25837,7 @@ function restart() {
     return d === selected_link;
   }).style('marker-end', function (d) {
     if (d) {
-      return d.archedLeft || d.archedRight ? 'url(#arc-end-arrow)' : 'url(#end-arrow)';
+      return d.has_evil_twin ? 'url(#arc-end-arrow)' : 'url(#end-arrow)';
     }
   });
 
@@ -25845,7 +25845,7 @@ function restart() {
   path.enter().append('svg:path').attr('class', 'link').attr('id', function (d) {
     return 'link_id_' + d.id;
   }).style('marker-end', function (d) {
-    return d.archedLeft || d.archedRight ? 'url(#arc-end-arrow)' : 'url(#end-arrow)';
+    return d.has_evil_twin ? 'url(#arc-end-arrow)' : 'url(#end-arrow)';
   }).classed('selected', function (d) {
     return d === selected_link;
   }).on('mousedown', function (d) {
@@ -25863,19 +25863,21 @@ function restart() {
     return d.id;
   });
 
-  _d2.default.selectAll('.capacity-text').attr("dy", function (d) {
-    return d.archedLeft || d.archedRight ? "-8px" : "-8px";
-  }).attr("dx", function (d) {
-    return d.archedLeft || d.archedRight ? "25px" : "10px";
+  // update capacity text
+  _d2.default.selectAll('.capacity-text').attr("dy", "-8px").attr("dx", function (d) {
+    return d.has_evil_twin ? "40px" : "25px";
+  });
+
+  // update flow text
+  _d2.default.selectAll('.flow-text').attr("dy", "-8px").attr("dx", function (d) {
+    return d.has_evil_twin ? "-50px" : "-30px";
   });
 
   var link_text = path_text.enter().append('g').attr('class', 'link-text');
 
   // Show capacity for each link
-  link_text.append('svg:text').attr('class', 'capacity-text').style('font-size', "12px").attr("dy", function (d) {
-    return d.archedLeft || d.archedRight ? "-8px" : "-8px";
-  }).attr("dx", function (d) {
-    return d.archedLeft || d.archedRight ? "25px" : "10px";
+  link_text.append('svg:text').attr('class', 'capacity-text').style('font-size', "12px").attr("dy", "-8px").attr("dx", function (d) {
+    return d.has_evil_twin ? "40px" : "25px";
   }).append('svg:textPath').attr('xlink:href', function (d) {
     return '#link_id_' + d.id;
   }).style("text-anchor", "start").attr('startOffset', '0%').attr("class", function (d) {
@@ -25885,13 +25887,11 @@ function restart() {
   });
 
   // Show flow for each link
-  link_text.append('svg:text').attr('class', 'flow-text').style('font-size', "12px").attr("dy", function (d) {
-    return d.archedLeft ? "-8px" : "-8px";
-  }).attr("dx", function (d) {
-    return d.archedLeft ? "12px" : "18px";
+  link_text.append('svg:text').attr('class', 'flow-text').style('font-size', "12px").attr("dy", "-8px").attr("dx", function (d) {
+    return d.has_evil_twin ? "-50px" : "-30px";
   }).append('svg:textPath').attr('xlink:href', function (d) {
     return '#link_id_' + d.id;
-  }).style("text-anchor", "start").attr('startOffset', '80%').attr("class", function (d) {
+  }).style("text-anchor", "start").attr('startOffset', '100%').attr("class", function (d) {
     return "flow_" + d.id;
   }).text(function (d) {
     return d.flow;
@@ -26189,7 +26189,8 @@ var Edge = function () {
     }
     this.id = _uuid2.default.v4();
     this.flow = 0;
-    this.inFlowPath = false;
+    this.in_flow_path = false;
+    this.has_evil_twin = false;
     this.archedLeft = false;
     this.archedRight = false;
   }
@@ -26213,14 +26214,14 @@ var Edge = function () {
       }
       this.capacity -= flow;
       this.flow += flow;
-      this.inFlowPath = true;
+      this.in_flow_path = true;
     }
   }, {
     key: "resetFlow",
     value: function resetFlow() {
       this.capacity += this.flow;
       this.flow = 0;
-      this.inFlowPath = false;
+      this.in_flow_path = false;
     }
   }]);
 
@@ -26331,14 +26332,14 @@ var Graph = function () {
       });
 
       if (-1 === clone_index) {
-        // if there is another node going in the opposite direction, edges will need to be arched in display
+        // if there is another node going in the opposite direction, edges will be evil twins
         var evil_twin_index = _lodash2.default.findIndex(this.edges, function (e) {
           return e.source.id === edge.target.id && e.target.id === edge.source.id;
         });
 
         if (-1 !== evil_twin_index) {
-          this.edges[evil_twin_index].archedLeft = true;
-          edge.archedRight = true;
+          this.edges[evil_twin_index].has_evil_twin = true;
+          edge.has_evil_twin = true;
         }
         this.edges.push(edge);
         this.addVertex(edge.source);
@@ -26348,16 +26349,14 @@ var Graph = function () {
   }, {
     key: 'removeEdge',
     value: function removeEdge(edge) {
-      // if the edge is arched, remove it and its evil twin's arches
-      if (edge.archedLeft || edge.archedRight) {
-        edge.archedLeft = false;
-        edge.archedRight = false;
+      // if the edge is an evil twin, make it no longer so...
+      if (edge.has_evil_twin) {
+        edge.has_evil_twin = false;
         var evil_twin_index = _lodash2.default.findIndex(this.edges, function (e) {
           return e.source.id === edge.target.id && e.target.id === edge.source.id;
         });
         if (-1 !== evil_twin_index) {
-          this.edges[evil_twin_index].archedLeft = false;
-          this.edges[evil_twin_index].archedRight = false;
+          this.edges[evil_twin_index].has_evil_twin = false;
         }
       }
       _lodash2.default.remove(this.edges, function (e) {

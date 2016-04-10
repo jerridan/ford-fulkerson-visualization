@@ -79,16 +79,15 @@ describe('Graph', function () {
       g.addEdge(e2);
       expect(g.edges).to.eql([e1]);
     });
-    it('does not set "leftArched" or "rightArched" to true if there is only one edge between 2 nodes', function () {
+    it('does not set "has_evil_twin" to true if there is only one edge between 2 nodes', function () {
       let g = new Graph();
       let v0 = new Vertex(0);
       let v1 = new Vertex(1);
       let e = new Edge(v0, v1);
       g.addEdge(e);
-      expect(e.archedLeft).to.be.false;
-      expect(e.archedRight).to.be.false;
+      expect(e.has_evil_twin).to.be.false;
     });
-    it('assigns edges to be arched if there are 2 edges between 2 nodes', function () {
+    it('assigns edges to be evil twins if there are 2 edges between 2 nodes', function () {
       let g = new Graph();
       let v0 = new Vertex(0);
       let v1 = new Vertex(1);
@@ -96,10 +95,8 @@ describe('Graph', function () {
       let e10 = new Edge(v1, v0);
       g.addEdge(e01);
       g.addEdge(e10);
-      expect(e01.archedLeft).to.be.true;
-      expect(e01.archedRight).to.be.false;
-      expect(e10.archedLeft).to.be.false;
-      expect(e10.archedRight).to.be.true;
+      expect(e01.has_evil_twin).to.be.true;
+      expect(e10.has_evil_twin).to.be.true;
     });
   });
   describe('#removeEdge', function () {
@@ -110,7 +107,7 @@ describe('Graph', function () {
       g.removeEdge(e);
       expect(g.edges).to.eql([]);
     });
-    it('unassigns archings if an edge is removed where it was previously arched', function () {
+    it('unassigns "has_evil_twin" if an edge is removed where it was previously an evil twin', function () {
       let g = new Graph();
       let v0 = new Vertex(0);
       let v1 = new Vertex(1);
@@ -119,10 +116,8 @@ describe('Graph', function () {
       g.addEdge(e01);
       g.addEdge(e10);
       g.removeEdge(e10);
-      expect(e01.archedLeft).to.be.false;
-      expect(e01.archedRight).to.be.false;
-      expect(e10.archedLeft).to.be.false;
-      expect(e10.archedRight).to.be.false;
+      expect(e01.has_evil_twin).to.be.false;
+      expect(e10.has_evil_twin).to.be.false;
     });
   });
   describe('#get size', function () {
