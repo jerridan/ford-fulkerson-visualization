@@ -201,14 +201,14 @@ function restart() {
   d3.selectAll('.capacity-text')
     .attr("dy", "-8px")
     .attr("dx", function (d) {
-      return d.has_evil_twin ? "40px" : "25px";
+      return d.has_evil_twin ? "65px" : "50px";
     });
 
   // update flow text
   d3.selectAll('.flow-text')
     .attr("dy", "-8px")
     .attr("dx", function (d) {
-      return d.has_evil_twin ? "-50px" : "-30px";
+      return d.has_evil_twin ? "-75px" : "-55px";
     });
 
   let link_text = path_text.enter()
@@ -220,9 +220,10 @@ function restart() {
     .append('svg:text')
     .attr('class', 'capacity-text')
     .style('font-size', "12px")
+    .attr('fill', '#FF9800')
     .attr("dy", "-8px")
     .attr("dx", function (d) {
-      return d.has_evil_twin ? "40px" : "25px";
+      return d.has_evil_twin ? "65px" : "50px";
     })
     .append('svg:textPath')
     .attr('xlink:href', function (d) {
@@ -242,9 +243,10 @@ function restart() {
     .append('svg:text')
     .attr('class', 'flow-text')
     .style('font-size', "12px")
+    .attr('fill', '#2196F3')
     .attr("dy", "-8px")
     .attr("dx", function (d) {
-      return d.has_evil_twin ? "-50px" : "-30px";
+      return d.has_evil_twin ? "-75px" : "-55px";
     })
     .append('svg:textPath')
     .attr('xlink:href', function (d) {
@@ -280,6 +282,11 @@ function restart() {
         return d3.rgb(colors(d.id)).darker().toString();
       }
     })
+    .style('stroke-width', function(d) { // make stroke of source and sink wider
+      if (d === graph.source || d === graph.sink) {
+        return '3px';
+      }
+    })
     .style('stroke-dasharray', function (d) { // sink has dashed border
       if (d === graph.sink) {
         return '5, 3';
@@ -300,6 +307,11 @@ function restart() {
         return d3.rgb('black');
       } else {
         return d3.rgb(colors(d.id)).darker().toString();
+      }
+    })
+    .style('stroke-width', function(d) { // make stroke of source and sink wider
+      if (d === graph.source || d === graph.sink) {
+        return '3px';
       }
     })
     .style('stroke-dasharray', function (d) { // sink has dashed border

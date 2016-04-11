@@ -25868,19 +25868,19 @@ function restart() {
 
   // update capacity text
   _d2.default.selectAll('.capacity-text').attr("dy", "-8px").attr("dx", function (d) {
-    return d.has_evil_twin ? "40px" : "25px";
+    return d.has_evil_twin ? "65px" : "50px";
   });
 
   // update flow text
   _d2.default.selectAll('.flow-text').attr("dy", "-8px").attr("dx", function (d) {
-    return d.has_evil_twin ? "-50px" : "-30px";
+    return d.has_evil_twin ? "-75px" : "-55px";
   });
 
   var link_text = path_text.enter().append('g').attr('class', 'link-text');
 
   // Show capacity for each link
-  link_text.append('svg:text').attr('class', 'capacity-text').style('font-size', "12px").attr("dy", "-8px").attr("dx", function (d) {
-    return d.has_evil_twin ? "40px" : "25px";
+  link_text.append('svg:text').attr('class', 'capacity-text').style('font-size', "12px").attr('fill', '#FF9800').attr("dy", "-8px").attr("dx", function (d) {
+    return d.has_evil_twin ? "65px" : "50px";
   }).append('svg:textPath').attr('xlink:href', function (d) {
     return '#link_id_' + d.id;
   }).style("text-anchor", "start").attr('startOffset', '0%').attr("class", function (d) {
@@ -25890,8 +25890,8 @@ function restart() {
   });
 
   // Show flow for each link
-  link_text.append('svg:text').attr('class', 'flow-text').style('font-size', "12px").attr("dy", "-8px").attr("dx", function (d) {
-    return d.has_evil_twin ? "-50px" : "-30px";
+  link_text.append('svg:text').attr('class', 'flow-text').style('font-size', "12px").attr('fill', '#2196F3').attr("dy", "-8px").attr("dx", function (d) {
+    return d.has_evil_twin ? "-75px" : "-55px";
   }).append('svg:textPath').attr('xlink:href', function (d) {
     return '#link_id_' + d.id;
   }).style("text-anchor", "start").attr('startOffset', '100%').attr("class", function (d) {
@@ -25919,6 +25919,11 @@ function restart() {
     } else {
       return _d2.default.rgb(colors(d.id)).darker().toString();
     }
+  }).style('stroke-width', function (d) {
+    // make stroke of source and sink wider
+    if (d === graph.source || d === graph.sink) {
+      return '3px';
+    }
   }).style('stroke-dasharray', function (d) {
     // sink has dashed border
     if (d === graph.sink) {
@@ -25937,6 +25942,11 @@ function restart() {
       return _d2.default.rgb('black');
     } else {
       return _d2.default.rgb(colors(d.id)).darker().toString();
+    }
+  }).style('stroke-width', function (d) {
+    // make stroke of source and sink wider
+    if (d === graph.source || d === graph.sink) {
+      return '3px';
     }
   }).style('stroke-dasharray', function (d) {
     // sink has dashed border
