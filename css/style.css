@@ -475,7 +475,6 @@ text.id {
   width: 1200px;
 }
 .title {
-  font-size: 28px;
   text-align: center;
 }
 .main-button-container {
@@ -488,7 +487,7 @@ text.id {
 #calc-max-flow-btn,
 #reset-flow-btn,
 #erase-graph-btn {
-  margin: 10px 10px 10px 0;
+  margin: 0px 10px 10px 0;
   width: 115px;
 }
 .display {

@@ -6,14 +6,14 @@ html
     link(href='https://fonts.googleapis.com/icon?family=Material+Icons' rel='stylesheet')
   body
     div.container
-      div.title Maximum Flow Visual
+      h2.title Ford-Fulkerson Visual Representation
       div.main-button-container
         button.material-regular-button(id='calc-max-flow-btn') Get max flow
         button.material-regular-button(id='reset-flow-btn') Reset flow
         button.material-regular-button(id='erase-graph-btn') Erase
       div.algorithms
         label.radio(id='edmonds-karp-select')
-          span Edmonds-Karp (Breadth First Search)
+          span Breadth First Search (Edmonds-Karp)
           input(type='radio')
         label.radio(id='dfs-select')
           span Depth First Search
@@ -21,6 +21,8 @@ html
         label.radio(id='fattest-path-select')
           span Fattest Path
           input(type='radio')
+      label Interval(sec) (0-10)
+        input(id='interval-select' type='number' min=0 max=10)
       div.display
         div(id='graph')
         div(id='info-panel')
@@ -32,4 +34,49 @@ html
             span(id='number-iterations') 0
           div
             div(id='augmenting-paths')
+      div.instructions
+        h3 Information
+        p This application provides a visual representation of
+          | the #[a(href='https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm' target='_blank') Ford-Fulkerson] algorithm,
+          | which can be used to determine the maximum flow of a directed network graph. A graph can be
+          | built on the canvas above, using the instructions provided below.
+        p On each edge is two numbers: the remaining capacity (orange) and the flow (blue).
+        p When the algorithm is run, augmenting paths chosen to increase the flow are highlighted in green
+          | at a set interval. Once the maximum flow has been determined, all edges that have flow are
+          | highlighted in blue. The information panel to the right of the canvas will display the calculated
+          | maximum flow, the number of augmenting paths used, and a trace of each augmenting path.
+        h3 Instructions
+        h4 Vertices
+        ul
+          li Add a vertex: Left- or right-click on canvas
+          li Delete a vertex: Right-click on vertex and select 'Remove vertex'
+          li Move a vertex: Shift + left-click on vertex and drag to desired position
+          li Set graph source: Right-click on vertex and select 'Set as source'
+          li Set graph sink: Right-click on vertex and select 'Set as sink'
+        h4 Edges
+        ul
+          li Add an edge: Left-click and drag between source and target vertices
+          li Select an edge: Left click on the edge
+          li De-select an edge: Hit 'Enter' or 'Esc'
+          li Change capacity of an edge: Select the edge and enter a numeric value
+          li Delete an edge: Select the edge and hit 'd' or 'delete'
+        h4 Maximum flow
+        ul
+          li To run the animation:
+            ol
+              li Select method of searching for augmenting paths
+                ul
+                  a(href='https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm' target='_blank')
+                    li Breadth First Search
+                  a(href='https://en.wikipedia.org/wiki/Depth-first_search' target='_blank')
+                    li Depth First Search
+                  a(href='https://lucatrevisan.wordpress.com/2011/02/04/cs-261-lecture-10-the-fattest-path/' target='_blank')
+                    li Fattest Path
+              li Click 'Get max flow'
+          li Use the 'Interval' number input to change the time interval between the display of augmenting paths
+          li To reset the flow to zero: Click 'Reset flow'
+          li To erase the entire graph: Click 'Erase'
+            ul
+              li Note: This cannot be undone!
+        hr
     script(type='text/javascript' src='dist/index.js')

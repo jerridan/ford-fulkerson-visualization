@@ -25722,6 +25722,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 // algorithm can be: EK, DFS, FP
 var chosen_algorithm = 'EK';
 
+// interval between flow increases during animation (ms)
+var time_interval = 1000;
+
 // set up SVG for D3
 var width = 960,
     height = 700,
@@ -26060,19 +26063,24 @@ function hideDragLine() {
 }
 
 function keydown() {
-  _d2.default.event.preventDefault();
-
   var key_code = _d2.default.event.keyCode;
 
-  if (selected_link && (13 === key_code || 27 === key_code)) {
-    // enter or escape
-    entered_capacity_val = "";
-    selected_link = null;
-    restart();
-  } else if (selected_link && key_code > 47 && key_code < 58) {
-    // numeric value
-    updateCapacityVal(key_code - 48);
+  if (selected_link) {
+    if (13 === key_code || 27 === key_code) {
+      // enter or escape
+      entered_capacity_val = "";
+      selected_link = null;
+      restart();
+    } else if (key_code > 47 && key_code < 58) {
+      // numeric value
+      updateCapacityVal(key_code - 48);
+    } else if (46 === key_code || 68 === key_code) {
+      // delete or backspace
+      graph.removeEdge(selected_link);
+      restart();
+    }
   } else if (16 === key_code) {
+    // shift
     shift_mode = true;
   }
 }
@@ -26102,16 +26110,13 @@ function updateCapacityVal(i) {
   }
 }
 
-function calcMaxFlow() {
-  edmondsKarp();
-}
-
-function edmondsKarp() {
+function fordFulkerson() {
   resetFlowAmounts();
 
   // disable buttons during calculation
   _d2.default.select('#calc-max-flow-btn').attr('disabled', 'disabled');
   _d2.default.select('#reset-flow-btn').attr('disabled', 'disabled');
+  _d2.default.select('#erase-graph-btn').attr('disabled', 'disabled');
 
   var saved_info = {};
   saved_info.flow_increases = [];
@@ -26169,13 +26174,14 @@ function edmondsKarp() {
       // enable buttons again
       _d2.default.select('#calc-max-flow-btn').attr('disabled', null);
       _d2.default.select('#reset-flow-btn').attr('disabled', null);
+      _d2.default.select('#erase-graph-btn').attr('disabled', null);
 
       _.flatten(saved_info.augmenting_paths).map(function (edge) {
         _d2.default.select('#link_id_' + edge.id).classed('augmented', false).classed('has-flow', true);
       });
       restart();
     }
-  }, 1000);
+  }, time_interval);
 }
 
 function displaySavedInfo(saved_info) {
@@ -26266,6 +26272,10 @@ function setFattestPath() {
   _d2.default.select('#fattest-path-select').classed('checked', true);
 }
 
+function setTimeInterval() {
+  time_interval = _d2.default.event.target.value * 1000;
+}
+
 // mouse event handlers
 svg.on('mousedown', addNewNode);
 svg.on('mousemove', updateDragLine);
@@ -26274,14 +26284,14 @@ svg.on('mouseup', hideDragLine);
 // keyboard event handlers
 _d2.default.select(window).on('keydown', keydown).on('keyup', keyup);
 
-_d2.default.select('#calc-max-flow-btn').on('click', calcMaxFlow);
+_d2.default.select('#calc-max-flow-btn').on('click', fordFulkerson);
 _d2.default.select('#reset-flow-btn').on('click', resetFlowAmounts);
 _d2.default.select('#erase-graph-btn').on('click', eraseGraph);
-//d3.select('.algorithms').selectAll('.radio').on('click', setAlgorithm());
 
 _d2.default.select('#edmonds-karp-select').on('click', setEdmondsKarp).classed('checked', true);
 _d2.default.select('#dfs-select').on('click', setDFS);
 _d2.default.select('#fattest-path-select').on('click', setFattestPath);
+_d2.default.select('#interval-select').attr('value', time_interval / 1000).on('change', setTimeInterval);
 
 restart();
 

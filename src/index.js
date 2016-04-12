@@ -10,6 +10,9 @@ import sample_graph from './lib/sample_graph';
 // algorithm can be: EK, DFS, FP
 let chosen_algorithm = 'EK';
 
+// interval between flow increases during animation (ms)
+let time_interval = 1000;
+
 // set up SVG for D3
 let width = 960,
   height = 700,
@@ -282,7 +285,7 @@ function restart() {
         return d3.rgb(colors(d.id)).darker().toString();
       }
     })
-    .style('stroke-width', function(d) { // make stroke of source and sink wider
+    .style('stroke-width', function (d) { // make stroke of source and sink wider
       if (d === graph.source || d === graph.sink) {
         return '3px';
       }
@@ -309,7 +312,7 @@ function restart() {
         return d3.rgb(colors(d.id)).darker().toString();
       }
     })
-    .style('stroke-width', function(d) { // make stroke of source and sink wider
+    .style('stroke-width', function (d) { // make stroke of source and sink wider
       if (d === graph.source || d === graph.sink) {
         return '3px';
       }
@@ -444,17 +447,20 @@ function hideDragLine() {
 }
 
 function keydown() {
-  d3.event.preventDefault();
-
   let key_code = d3.event.keyCode;
 
-  if (selected_link && (13 === key_code || 27 === key_code)) { // enter or escape
-    entered_capacity_val = "";
-    selected_link = null;
-    restart();
-  } else if (selected_link && (key_code > 47 && key_code < 58)) { // numeric value
-    updateCapacityVal(key_code - 48);
-  } else if (16 === key_code) {
+  if (selected_link) {
+    if (13 === key_code || 27 === key_code) { // enter or escape
+      entered_capacity_val = "";
+      selected_link = null;
+      restart();
+    } else if (key_code > 47 && key_code < 58) { // numeric value
+      updateCapacityVal(key_code - 48);
+    } else if (46 === key_code || 68 === key_code) { // delete or backspace
+      graph.removeEdge(selected_link);
+      restart();
+    }
+  } else if (16 === key_code) { // shift
     shift_mode = true;
   }
 }
@@ -483,17 +489,15 @@ function updateCapacityVal(i) {
   }
 }
 
-function calcMaxFlow() {
-  edmondsKarp();
-}
-
-function edmondsKarp() {
+function fordFulkerson() {
   resetFlowAmounts();
 
   // disable buttons during calculation
   d3.select('#calc-max-flow-btn')
     .attr('disabled', 'disabled');
   d3.select('#reset-flow-btn')
+    .attr('disabled', 'disabled');
+  d3.select('#erase-graph-btn')
     .attr('disabled', 'disabled');
 
   let saved_info = {};
@@ -558,6 +562,8 @@ function edmondsKarp() {
         .attr('disabled', null);
       d3.select('#reset-flow-btn')
         .attr('disabled', null);
+      d3.select('#erase-graph-btn')
+        .attr('disabled', null);
 
       _.flatten(saved_info.augmenting_paths).map(function (edge) {
         d3.select('#link_id_' + edge.id)
@@ -566,7 +572,7 @@ function edmondsKarp() {
       });
       restart();
     }
-  }, 1000);
+  }, time_interval);
 }
 
 function displaySavedInfo(saved_info) {
@@ -675,6 +681,10 @@ function setFattestPath() {
     .classed('checked', true);
 }
 
+function setTimeInterval() {
+  time_interval = d3.event.target.value * 1000;
+}
+
 // mouse event handlers
 svg.on('mousedown', addNewNode);
 svg.on('mousemove', updateDragLine);
@@ -685,15 +695,17 @@ d3.select(window)
   .on('keydown', keydown)
   .on('keyup', keyup);
 
-d3.select('#calc-max-flow-btn').on('click', calcMaxFlow);
+d3.select('#calc-max-flow-btn').on('click', fordFulkerson);
 d3.select('#reset-flow-btn').on('click', resetFlowAmounts);
 d3.select('#erase-graph-btn').on('click', eraseGraph);
-//d3.select('.algorithms').selectAll('.radio').on('click', setAlgorithm());
 
 d3.select('#edmonds-karp-select')
   .on('click', setEdmondsKarp)
   .classed('checked', true);
 d3.select('#dfs-select').on('click', setDFS);
 d3.select('#fattest-path-select').on('click', setFattestPath);
+d3.select('#interval-select')
+  .attr('value', time_interval / 1000)
+  .on('change', setTimeInterval);
 
 restart();
