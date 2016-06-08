@@ -6,6 +6,7 @@
   "scripts": {
     "prebuild": "rm -rf dist && mkdir dist",
     "build": "babel src/index.js -o dist/index.js",
+    "dev": "nodemon ford_fulkerson.js",
     "dev-build": "browserify src/index.js -o dist/index.js",
     "dev-watch": "watchify src/index.js -o dist/index.js",
     "test": "mocha src/index.test.js -w --compilers js:babel-register",
@@ -33,6 +34,7 @@
     "chai": "^3.5.0",
     "istanbul": "^1.0.0-alpha",
     "mocha": "^2.4.5",
+    "nodemon": "^1.9.2",
     "watchify": "^3.7.0"
   },
   "dependencies": {
